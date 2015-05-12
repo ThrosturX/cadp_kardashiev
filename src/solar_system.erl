@@ -32,6 +32,8 @@ sleep(T) ->
 
 randomSleep(T) ->
 	sleep(random:uniform(T)).
+randomSleep(N,M) ->
+	sleep(random(N,M)).
 
 start_link() ->
 	register(solar, self()),
@@ -54,17 +56,17 @@ harvest(Type) ->
 harvesting(gas) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(random(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME)),
+	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, 0, 0, random:uniform(?MAX_HARVEST)});
 harvesting(asteroid) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(random(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME)),
+	randomsleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, random:uniform(?MAX_HARVEST), 0, 0});
 harvesting(mclass) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(random(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME)),
+	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, 0, random:uniform(?MAX_HARVEST), 0}).
 	
 	
