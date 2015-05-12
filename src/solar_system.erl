@@ -23,8 +23,14 @@
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
 
+random(N) ->
+	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
+	random:seed(A,B,C),
+	random:uniform(N).
 
 random(N,M) -> 
+	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
+	random:seed(A,B,C),
 	N + random:uniform(M-N).
 
 sleep(T) ->
@@ -33,7 +39,7 @@ sleep(T) ->
 	end.
 
 randomSleep(T) ->
-	sleep(random:uniform(T)).
+	sleep(random(T)).
 randomSleep(N,M) ->
 	sleep(random(N,M)).
 
@@ -60,6 +66,9 @@ home_planet() ->
 print_resources() ->
 	gen_server:call(solar_system, resources).
 
+build(Type) ->
+	io:format("Build: ~w~n", [Type]).
+
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
 harvest(Type) ->
@@ -76,7 +85,6 @@ harvest(Type) ->
 % Perform a harvesting operation of the given type and after waiting for  
 % some time, sends the result to the server
 harvesting(Type) ->
-	random:seed(now()),
 	io:format("Harvesting~n"),
 	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST)}).
@@ -126,8 +134,7 @@ sendWait(Type, Msg, Node, Time) ->
 %%% gen_server callbacks
 
 init([]) -> 
-	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-	random:seed(now()),
+	
 	%The state consists of 3 dictionaries: Resources, Ships and TradeRes.
 	Resources = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	Ships = dict:from_list([{'Cargo ship', 3}, {'Harvester', 3}, {'Escort', 3}]),
