@@ -68,19 +68,29 @@ init(Options) ->
 
 	TopSplitter = wxSplitterWindow:new(Frame, [{style, ?wxSP_NOBORDER}]),
 	UpperSplitter = wxSplitterWindow:new(TopSplitter, [{style, ?wxSP_NOBORDER}]),
+	LeftSplitter = wxSplitterWindow:new(UpperSplitter, [{style, ?wxSP_NOBORDER}]),
+	LeftSplitter2 = wxSplitterWindow:new(LeftSplitter, [{style, ?wxSP_NOBORDER}]),
 
-	wxSplitterWindow:setSashGravity(TopSplitter,   0.5),
+	wxSplitterWindow:setSashGravity(TopSplitter,   0.8),
 	wxSplitterWindow:setSashGravity(UpperSplitter, 0.6),
+	wxSplitterWindow:setSashGravity(LeftSplitter, 0.5),
+	wxSplitterWindow:setSashGravity(LeftSplitter2, 0.5),
 
-	% ...
-	{ResourcePanel, [], _} = create_subwindow(UpperSplitter, "Resources", []),
+	{ResourcePanel, [], _} = create_subwindow(LeftSplitter, "Resources", []),
 	{ContactPanel, [], _} = create_subwindow(UpperSplitter, "Contacts", []),
+	{ShipPanel, [], _} = create_subwindow(LeftSplitter2, "Ships", []),
+	{OfferPanel, [], _} = create_subwindow(LeftSplitter2, "Offers", []),
 
 	%% UpperSplitter:
-	wxSplitterWindow:splitVertically(UpperSplitter, ResourcePanel, ContactPanel, [{sashPosition,600}]),
+	wxSplitterWindow:splitVertically(UpperSplitter, LeftSplitter, ContactPanel, [{sashPosition,600}]),
+	wxSplitterWindow:splitHorizontally(LeftSplitter, ResourcePanel, LeftSplitter2, [{sashPosition,200}]),
+	wxSplitterWindow:splitHorizontally(LeftSplitter2, ShipPanel, OfferPanel, [{sashPosition,400}]),
 
 	Resources = create_resource_ctrl(ResourcePanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
 	Contacts = create_trade_ctrl(ContactPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+
+	Ships = create_ship_ctrl(ShipPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+	Offers = create_offer_ctrl(OfferPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
 	
 	%% TopSplitter: 
 	AddEvent = fun(Parent) ->
@@ -95,21 +105,30 @@ init(Options) ->
 
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
 	
-	wxSplitterWindow:splitHorizontally(TopSplitter, UpperSplitter, EvPanel, [{sashPosition,-100}]),
+	wxSplitterWindow:splitHorizontally(TopSplitter, UpperSplitter, EvPanel, [{sashPosition,100}]),
+
+	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
+	Watcher = whereis(refresher),
+	if
+		Watcher =/= undefined ->
+			Watcher ! die,
+			receive
+				_ -> true
+			after 2000 -> true
+			end;
+		true -> true
+	end,
+	Pid = spawn(client, handle_update, [State]),
+	register(refresher, Pid),
 
 	wxFrame:show(Frame),
-
-	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, env=wx:get_env()},
-	register(refresher, spawn(client, handle_update, [State])),
 
 	wxSplitterWindow:setSashGravity(TopSplitter,   1.0),
 	wxSplitterWindow:setSashGravity(UpperSplitter, 0.0),
 	wxSplitterWindow:setMinimumPaneSize(TopSplitter, 1),
 	wxSplitterWindow:setMinimumPaneSize(UpperSplitter, 1),
-
-%	update_resources(State, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]),
-	refresher ! {resources, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]},
-	update_contacts(State, [{"Blorg", "Iron", "Wool"}, {"Narnia", "Food", "Lions"}]),
+	wxSplitterWindow:setMinimumPaneSize(LeftSplitter, 1),
+	wxSplitterWindow:setMinimumPaneSize(LeftSplitter2, 1),
 
 	{Frame, State}.
 
@@ -272,7 +291,9 @@ handle_update(State) ->
 		{ships, L} ->
 			update_ships(State, L);
 		{offers, L} ->
-			update_offers(State, L)
+			update_offers(State, L);
+		die ->
+			exit(ok)
 	end,
 	handle_update(State).
 
