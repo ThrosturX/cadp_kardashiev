@@ -1,13 +1,14 @@
 -module(client).
 -export([start/0, start/1, start_link/0, start_link/1, format/3, 
 	 init/1, terminate/2,  code_change/3,
-	 handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+	 handle_info/2, handle_call/3, handle_cast/2, handle_event/2,
+	 handle_update/1, notify/1]).
 
 -include_lib("wx/include/wx.hrl").
 
 -behaviour(wx_object).
 
--record(state, {win, log, resources, contacts}).
+-record(state, {win, log, resources, contacts, env}).
 
 -define(ID_DEATH_RAY, 101).
 -define(ID_HARVEST, 102).
@@ -98,14 +99,16 @@ init(Options) ->
 
 	wxFrame:show(Frame),
 
-	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts},
+	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, env=wx:get_env()},
+	register(refresher, spawn(client, handle_update, [State])),
 
 	wxSplitterWindow:setSashGravity(TopSplitter,   1.0),
 	wxSplitterWindow:setSashGravity(UpperSplitter, 0.0),
 	wxSplitterWindow:setMinimumPaneSize(TopSplitter, 1),
 	wxSplitterWindow:setMinimumPaneSize(UpperSplitter, 1),
 
-	update_resources(State, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]),
+%	update_resources(State, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]),
+	refresher ! {resources, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]},
 	update_contacts(State, [{"Blorg", "Iron", "Wool"}, {"Narnia", "Food", "Lions"}]),
 
 	{Frame, State}.
@@ -230,3 +233,16 @@ terminate(_Reason, State = #state{win=Frame}) ->
 	catch wx_object:call(State#state.log, shutdown),
 	wxFrame:destroy(Frame),
 	wx:destroy().
+
+handle_update(State) ->
+	receive
+		{resources, L} ->
+			Env = State#state.env,
+			wx:set_env(Env),
+			update_resources(State, L)
+	end,
+	handle_update(State).
+
+notify(L) ->
+	refresher ! L.
+
