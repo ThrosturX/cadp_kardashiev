@@ -140,13 +140,13 @@ init([]) ->
 	random:seed(now()),
 	{ok, {#resources{}, #ships{}, #resources{}}}.
 	
-% prints the resources and ships available
+%% prints the resources and ships available
 handle_call(resources, _From, State) ->				
 	{Resources, Ships, _} = State,
 	io:format("Resources: ~p~n", [Resources]),
 	io:format("Ships: ~p~n", [Ships]),
 	{reply, [], State};
-% starts a harvest and reserves a harvester if one is available. If not it ends the operation
+%% starts a harvest and reserves a harvester if one is available. If not it ends the operation
 handle_call(start_harvest, _From, State) ->			
 	io:format("check if enough ships~n"),
 	{Res, Ships, Trade} = State,
@@ -154,7 +154,7 @@ handle_call(start_harvest, _From, State) ->
 	if H == 0 -> {reply, [noship], State};
 	true -> {reply, [ship], {Res, Ships#ships{harvester = H - 1}, Trade}}
 	end;
-% checks if the resources and ships needed for the given trade is available
+%% checks if the resources and ships needed for the given trade is available
 handle_call({available, THave, QH}, _From, State) ->	
 	io:format("Check if enough resources~n"),
 	{Res, Ships, Trade} = State,
@@ -191,7 +191,7 @@ handle_call({available, THave, QH}, _From, State) ->
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
-% ends the harvest and increases our current resources accordingly
+%% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Iron, Food, Gas}, State) ->
 	io:format("harvest cast~n"),
 	{Resources, Ships, Trade} = State,
@@ -203,16 +203,16 @@ handle_cast({harvest, Iron, Food, Gas}, State) ->
 	C = Resources#resources.gas,
 	io:format("Gas: ~w~n", [Gas]),
 	{noreply, {#resources{iron = Iron+A, food = Food+B, gas = Gas+C}, Ships#ships{harvester = H + 1}, Trade}};	
-% receives a message from another player
+%% receives a message from another player
 handle_cast({Node, msg, Msg}, State) ->
 	io:format("Message from ~w: ~w~n", [Node, Msg]),
 	{noreply, State};
-% receives a trade request from another player
+%% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
 	%TODO: Add request to list of trade requests in GUI
 	{noreply, State};
-% receives a trade cancellation from another player
+%% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
 	%TODO: remove request to list of trade requests in GUI
