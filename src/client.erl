@@ -1,13 +1,14 @@
 -module(client).
 -export([start/0, start/1, start_link/0, start_link/1, format/3, 
 	 init/1, terminate/2,  code_change/3,
-	 handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+	 handle_info/2, handle_call/3, handle_cast/2, handle_event/2,
+	 handle_update/1, notify/1]).
 
 -include_lib("wx/include/wx.hrl").
 
 -behaviour(wx_object).
 
--record(state, {win, log, resources, contacts}).
+-record(state, {win, log, resources, contacts, ships, offers, env}).
 
 -define(ID_DEATH_RAY, 101).
 -define(ID_HARVEST, 102).
@@ -98,14 +99,16 @@ init(Options) ->
 
 	wxFrame:show(Frame),
 
-	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts},
+	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, env=wx:get_env()},
+	register(refresher, spawn(client, handle_update, [State])),
 
 	wxSplitterWindow:setSashGravity(TopSplitter,   1.0),
 	wxSplitterWindow:setSashGravity(UpperSplitter, 0.0),
 	wxSplitterWindow:setMinimumPaneSize(TopSplitter, 1),
 	wxSplitterWindow:setMinimumPaneSize(UpperSplitter, 1),
 
-	update_resources(State, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]),
+%	update_resources(State, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]),
+	refresher ! {resources, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]},
 	update_contacts(State, [{"Blorg", "Iron", "Wool"}, {"Narnia", "Food", "Lions"}]),
 
 	{Frame, State}.
@@ -127,10 +130,37 @@ create_trade_ctrl(Win, Options) ->
 	wxListCtrl:insertColumn(ListCtrl, 2, "Want"),
 	ListCtrl.
 
+create_ship_ctrl(Win, Options) ->
+	ListCtrl = wxListCtrl:new(Win, Options),
+	wxListCtrl:insertColumn(ListCtrl, 0, "Ship"),
+	wxListCtrl:insertColumn(ListCtrl, 1, "Quantity"),
+	ListCtrl.
+
 create_resource_ctrl(Win, Options) ->
 	ListCtrl = wxListCtrl:new(Win, Options),
 	wxListCtrl:insertColumn(ListCtrl, 0, "Resource"),
 	wxListCtrl:insertColumn(ListCtrl, 1, "Quantity"),
+	ListCtrl.
+
+create_offer_ctrl(Win, Options) ->
+	ListCtrl = wxListCtrl:new(Win, Options),
+	wxListCtrl:insertColumn(ListCtrl, 0, "Name"),
+	wxListCtrl:insertColumn(ListCtrl, 1, "Qty (want)"),
+	wxListCtrl:insertColumn(ListCtrl, 2, "Want"),
+	wxListCtrl:insertColumn(ListCtrl, 3, "Offer"),
+	wxListCtrl:insertColumn(ListCtrl, 4, "Qty (offer)"),
+	ListCtrl.
+
+update_offers(State, Contacts) ->
+	ListCtrl = State#state.offers,
+	wxListCtrl:deleteAllItems(ListCtrl),
+	insert_contact(ListCtrl, Contacts),
+	ListCtrl.
+
+update_ships(State, Ships) ->
+	ListCtrl = State#state.ships,
+	wxListCtrl:deleteAllItems(ListCtrl),
+	insert_resource(ListCtrl, Ships), % not a typo!! code re-use
 	ListCtrl.
 
 update_contacts(State, Contacts) ->
@@ -230,3 +260,22 @@ terminate(_Reason, State = #state{win=Frame}) ->
 	catch wx_object:call(State#state.log, shutdown),
 	wxFrame:destroy(Frame),
 	wx:destroy().
+
+handle_update(State) ->
+	Env = State#state.env,
+	wx:set_env(Env),
+	receive
+		{resources, L} ->
+			update_resources(State, L);
+		{contacts, L} ->
+			update_contacts(State, L);
+		{ships, L} ->
+			update_ships(State, L);
+		{offers, L} ->
+			update_offers(State, L)
+	end,
+	handle_update(State).
+
+notify(L) ->
+	refresher ! L.
+
