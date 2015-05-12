@@ -39,12 +39,12 @@ randomSleep(N,M) ->
 % returns the resources formatted for the arbitrator
 list_resources(State) ->
 	{Res, _, _} = State,
-	[{"Iron", fetch(iron, Res)}, {"Food", fetch(food, Res)}, {"Gas", fetch(gas, Res)}].
+	dict:to_list(Res).
 
 % returns the ships formatted for the arbitrator
-list_resources(State) ->
-	{_, Ships, _} = State,
-	[{"Cargo ship", fetch(cargo_ship, Ships)}, {"Harvester", fetch(harvester, Ships)}, {"Escort", fetch(escort, Ships)}].
+%list_resources(State) ->
+%	{_, Ships, _} = State,
+%	[{"Cargo ship", fetch(cargo_ship, Ships)}, {"Harvester", fetch(harvester, Ships)}, {"Escort", fetch(escort, Ships)}].
 	
 start_link() ->
 	register(home, spawn(solar_system, home_planet, [])),
@@ -66,6 +66,8 @@ harvest(Type) ->
 	io:format("Harvest~n"),
 	Reply = gen_server:call(solar_system, start_harvest),
 	io:format("reply: ~p~n", [Reply]),
+	
+	
 	spawn(solar_system, harvesting, [Type]).
 
 % Perform a harvesting operation of the given type and after waiting for  
@@ -128,9 +130,9 @@ init([]) ->
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	random:seed(now()),
 	%The state consists of 3 dictionaries: Resources, Ships and TradeRes.
-	Resources = dict:from_list([{iron, 0}, {food, 0}, {gas, 0}]),
-	Ships = dict:from_list([{cargo_ship, 3}, {harvester, 3}, {escort, 3}]),
-	TradeRes = dict:from_list([{iron, 0}, {food, 0}, {gas, 0}]),
+	Resources = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	Ships = dict:from_list([{'Cargo ship', 3}, {'Harvester', 3}, {'Escort', 3}]),
+	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	{ok, {Resources, Ships, TradeRes}}.
 	
 %% prints the resources and ships available
@@ -144,20 +146,20 @@ handle_call(resources, _From, State) ->
 handle_call(start_harvest, _From, State) ->			
 	io:format("check if enough ships~n"),
 	{Res, Ships, Trade} = State,
-	H = dict:fetch(harvester, Ships),
+	H = dict:fetch('Harvester', Ships),
 	if 
 		H == 0 -> 
-			{reply, [noship], State};
+			{reply, noship, State};
 		true -> 
-			NewShips = dict:update_counter(harvester, -1, Ships),
-			{reply, [ship], {Res, NewShips, Trade}}
+			NewShips = dict:update_counter('Harvester', -1, Ships),
+			{reply, ship, {Res, NewShips, Trade}}
 	end;
 
 %% checks if the resources and ships needed for the given trade is available
 handle_call({trade_available, THave, QH}, _From, State) ->
 	io:format("Check if enough resources~n"),
 	{Res, Ships, Trade} = State,
-	C = dict:fetch(cargo_ship, Ships),
+	C = dict:fetch('Cargo ship', Ships),
 	if 
 		C == 0 -> 
 			{reply, [noship], State};
@@ -166,7 +168,7 @@ handle_call({trade_available, THave, QH}, _From, State) ->
 			if 
 				R >= QH ->
 					NewRes = dict:update_counter(THave, -QH, Res),
-					NewShips = dict:update_counter(cargo_ship, -1, Ships),
+					NewShips = dict:update_counter('Cargo ship', -1, Ships),
 					NewTrade = dict:update_counter(THave, QH, Trade),
 					{reply, [ok], {NewRes, NewShips, NewTrade}};
 				true -> 
@@ -180,7 +182,7 @@ handle_call(_Msg, _From, State) ->
 handle_cast({harvest, Type, Qty}, State) ->
 	io:format("harvest cast~n"),
 	{Resources, Ships, Trade} = State,
-	NewShips = dict:update_counter(harvester, 1, Ships),
+	NewShips = dict:update_counter('Harvester', 1, Ships),
 	NewRes = dict:update_counter(Type, Qty, Resources),
 	io:format("~w: ~w~n", [Type, Qty]),
 	{noreply, {NewRes, NewShips, Trade}};	
