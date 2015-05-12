@@ -74,7 +74,11 @@ harvesting(mclass) ->
 	io:format("Harvesting~n"),
 	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, 0, random:uniform(?MAX_HARVEST), 0}).
-	
+
+
+trade_request(TWant, THave) ->
+	Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
+	lists:foreach(Fun, nodes()).	
 	
 
 spawner() -> 
@@ -90,12 +94,7 @@ display_nodes() ->
 
 send(Type, Msg, Node) ->
 	gen_server:cast({solar_system, Node}, {node(), Type, Msg}).
-
-
 	
-trade_request(TWant, THave) ->
-	Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
-	lists:foreach(Fun, nodes()).
 	
 %%% gen_server callbacks
 
@@ -135,6 +134,7 @@ handle_cast({Node, msg, Msg}, State) ->
 	{noreply, State};
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
+	%TODO: Add request to list of trade requests in GUI
 	{noreply, State};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
