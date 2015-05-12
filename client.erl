@@ -1,135 +1,161 @@
 -module(client).
+-export([start/0, start/1, start_link/0, start_link/1, format/3, 
+	 init/1, terminate/2,  code_change/3,
+	 handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+
 -include_lib("wx/include/wx.hrl").
--include_lib("wx/src/wxe.hrl").
-%-behaviour(wx_object).
 
--export([start/0]).
+-behaviour(wx_object).
 
--record(state, {win, log}).
+-record(state, {win, log, resources, contacts}).
 
 -define(ID_DEATH_RAY, 101).
 -define(ID_HARVEST, 102).
 -define(ID_TRADE, 103).
 -define(ID_BROADCAST, 104).
 -define(ID_MESSAGE, 105).
--define(ID_EXIT, 106).
--define(ID_ABOUT, 107).
--define(ID_CONNECT, 108).
+-define(ID_CONNECT, 106).
 
 start() ->
-	Wx = wx:new(),
-	Frame = wx:batch(fun() -> create_window(Wx) end),
-	wxWindow:show(Frame),
-	loop(Frame),
-	wx:destroy(),
+	start([]).
+
+start(Debug) ->
+	wx_object:start(?MODULE, Debug, []).
+
+start_link() ->
+	start_link([]).
+
+start_link(Debug) ->
+	wx_object:start_link(?MODULE, Debug, []).
+
+format(Log, Str, Args) ->
+	wxTextCtrl:appendText(Log, io_lib:format(Str, Args)),
 	ok.
 
-create_window(Wx) -> 
-	% initialize the main window
-	F=wxFrame:new(Wx, -1, "Kardashiev Client"),
+init(Options) ->
+	wx:new(Options),
+	process_flag(trap_exit, true),
 
-	wxFrame:createStatusBar(F,[]),
-	wxFrame:connect(F, close_window),
+	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Kardashiev Client"),
+	MB = wxMenuBar:new(),
+	Build	= wxMenu:new([]),
+	wxMenu:append(Build, ?ID_DEATH_RAY, "&Death Ray"),
+	Mission = wxMenu:new([]),
+	wxMenu:append(Mission, ?ID_HARVEST, "&Harvest"),
+	wxMenu:append(Mission, ?ID_TRADE, "&Trade"),
+	Comms	= wxMenu:new([]),
+	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast"),
+	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
+	wxMenu:appendSeparator(Comms),
+	wxMenu:append(Comms, ?ID_CONNECT, "&Connect"),
+	Game	= wxMenu:new([]),
+	wxMenu:append(Game, ?wxID_ABOUT, "&About"),
+	wxMenu:appendSeparator(Game),
+	wxMenu:append(Game, ?wxID_EXIT, "&Quit"),
 
-	MenuBar = wxMenuBar:new(),
-	wxFrame:setMenuBar(F, MenuBar),
-	% Menu bar items
-	BuildMn = wxMenu:new(),
-	MissionMn = wxMenu:new(),
-	CommsMn = wxMenu:new(),
-	GameMn = wxMenu:new(),
+	wxMenuBar:append(MB, Build, "&Build"),
+	wxMenuBar:append(MB, Mission, "&Mission"),
+	wxMenuBar:append(MB, Comms, "&Communications"),
+	wxMenuBar:append(MB, Game, "&Game"),
 
-	% Build menu
-	DeathRay = wxMenuItem:new([{id, ?ID_DEATH_RAY}, {text, "&Death Ray"}]),
-	wxMenu:append(BuildMn, DeathRay),
+	wxFrame:setMenuBar(Frame, MB),
 
-	% Mission menu
-	Harvest = wxMenuItem:new([{id, ?ID_HARVEST}, {text, "&Harvest"}]),
-	Trade = wxMenuItem:new([{id, ?ID_TRADE}, {text, "&Trade"}]),
-	wxMenu:append(MissionMn, Harvest),
-	wxMenu:append(MissionMn, Trade),
+	wxFrame:connect(Frame, command_menu_selected),
+	wxFrame:connect(Frame, close_window),
 
-	% Communication menu
-	Broadcast = wxMenuItem:new([{id, ?ID_BROADCAST}, {text, "&Broadcast"}]),
-	Message = wxMenuItem:new([{id, ?ID_MESSAGE}, {text, "&Message"}]),
-	wxMenu:append(CommsMn, Broadcast),
-	wxMenu:append(CommsMn, Message),
+	_SB = wxFrame:createStatusBar(Frame, []),
 
-	% Game menu
-	Connect = wxMenuItem:new([{id, ?ID_CONNECT}, {text, "&Connect"}]),
-	About = wxMenuItem:new([{id, ?ID_ABOUT}, {text, "&About"}]),
-	Quit = wxMenuItem:new([{id, ?ID_EXIT}, {text, "&Quit"}]),
-	wxMenu:append(GameMn, Connect),
-	wxMenu:appendSeparator(GameMn),
-	wxMenu:append(GameMn, About),
-	wxMenu:appendSeparator(GameMn),
-	wxMenu:append(GameMn, Quit),
+	TopSplitter = wxSplitterWindow:new(Frame, [{style, ?wxSP_NOBORDER}]),
+	UpperSplitter = wxSplitterWindow:new(TopSplitter, [{style, ?wxSP_NOBORDER}]),
 
-	ok = wxFrame:connect(F, command_menu_selected), 
+	wxSplitterWindow:setSashGravity(TopSplitter,   0.5),
+	wxSplitterWindow:setSashGravity(UpperSplitter, 0.6),
 
-	wxMenuBar:append(MenuBar, BuildMn, "&Build"),
-	wxMenuBar:append(MenuBar, MissionMn, "&Mission"),
-	wxMenuBar:append(MenuBar, CommsMn, "&Communicate"),
-	wxMenuBar:append(MenuBar, GameMn, "&Game"),
+	% ...
+    {ResourcePanel, [], _} = create_subwindow(UpperSplitter, "Resources", []),
+    {ContactPanel, [], _} = create_subwindow(UpperSplitter, "Contacts", []),
 
-	TopSplitter   = wxSplitterWindow:new(F, [{style, ?wxSP_NOBORDER}]),    
-	LeftSplitter  = wxSplitterWindow:new(TopSplitter, [{style, ?wxSP_NOBORDER}]),
+	%% UpperSplitter:
+	wxSplitterWindow:splitVertically(UpperSplitter, ResourcePanel, ContactPanel, [{sashPosition,600}]),
 
-	wxSplitterWindow:setSashGravity(TopSplitter,  0.40),
-	wxSplitterWindow:setSashGravity(LeftSplitter,  0.50),
-
-	AddMessage = fun(Parent) ->
+	Resources = create_resource_ctrl(ResourcePanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+	Contacts = create_trade_ctrl(ContactPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+	
+	%% TopSplitter: 
+	AddEvent = fun(Parent) ->
 			   EventText = wxTextCtrl:new(Parent, 
 						  ?wxID_ANY, 
 						  [{style, ?wxTE_DONTWRAP bor 
 							?wxTE_MULTILINE bor ?wxTE_READONLY}
 						  ]),
-			   wxTextCtrl:appendText(EventText, "Welcome\n"),
+			   wxTextCtrl:appendText(EventText, "Welcome, Lord Quas.\n"),
 			   EventText
 		   end,
 
-	{RSPanel, _, _} = create_subwindow(LeftSplitter, "Resources", []),
-	{TCPanel, _, _} = create_subwindow(LeftSplitter, "Trade Contacts", []),
-	{MsgPanel, _, _} = create_subwindow(TopSplitter, "Messages", [AddMessage]),
+	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
+	
+	wxSplitterWindow:splitHorizontally(TopSplitter, UpperSplitter, EvPanel, [{sashPosition,-100}]),
 
-	wxSplitterWindow:splitVertically(LeftSplitter, RSPanel, TCPanel, [{sashPosition, 200}]),
-	wxSplitterWindow:splitHorizontally(TopSplitter, LeftSplitter, MsgPanel, [{sashPosition, 400}]),
+	wxFrame:show(Frame),
 
-	Resources = create_resource_ctrl(RSPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
-	Contacts = create_trade_ctrl(TCPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts},
 
-	ok = wxFrame:setStatusText(F, "Kardashiev game initialized",[]),
+    wxSplitterWindow:setSashGravity(TopSplitter,   1.0),
+    wxSplitterWindow:setSashGravity(UpperSplitter, 0.0),
+    wxSplitterWindow:setMinimumPaneSize(TopSplitter, 1),
+    wxSplitterWindow:setMinimumPaneSize(UpperSplitter, 1),
 
-	F.
+	{Frame, State}.
 
-loop(Frame) ->
-	receive
-		#wx{event=#wxClose{}} -> 
-			wxFrame:destroy(Frame),
-			ok;
-		#wx{id=?ID_EXIT, event=#wxCommand{type=command_menu_selected}} -> 
-			wxFrame:destroy(Frame),
-			ok;
-		#wx{id=?ID_ABOUT, event=#wxCommand{type=command_menu_selected}} -> 
-			dialog(?ID_ABOUT, Frame),
-			loop(Frame);
-		#wx{id=?ID_CONNECT, event=#wxCommand{type=command_menu_selected}} -> 
-			connect_d(?ID_CONNECT, Frame),
-			loop(Frame);
-		Msg ->
-			io:format("Got ~p ~n", [Msg]),
-			loop(Frame)
-	after 1000 ->
-		io:fwrite("."),
-		loop(Frame)
-	end.
+%% Helpers
+create_subwindow(Parent, BoxLabel, Funs) ->
+	Panel = wxPanel:new(Parent),
+	Sz	  = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, BoxLabel}]),
+	wxPanel:setSizer(Panel, Sz),
+	Ctrls = [Fun(Panel) || Fun <- Funs],
+	[wxSizer:add(Sz, Ctrl, [{proportion, 1}, {flag, ?wxEXPAND}]) 
+	 || Ctrl <- Ctrls],
+	{Panel, Ctrls, Sz}.
 
-handle_event(Ev = #wx{}, State = #state{}) ->
-	io:format("Got Event ~p\n", [Ev]),
-	{noreply, State}.
+create_trade_ctrl(Win, Options) ->
+	ListCtrl = wxListCtrl:new(Win, Options),
+	wxListCtrl:insertColumn(ListCtrl, 0, "Name"),
+	wxListCtrl:insertColumn(ListCtrl, 1, "Have"),
+	wxListCtrl:insertColumn(ListCtrl, 2, "Want"),
+	ListCtrl.
 
-dialog(?ID_ABOUT, Frame) ->
-	Str = string:join(["Kardashiev Space Trading & Strategy Game.\n",
+create_resource_ctrl(Win, Options) ->
+	ListCtrl = wxListCtrl:new(Win, Options),
+	wxListCtrl:insertColumn(ListCtrl, 0, "Resource"),
+	wxListCtrl:insertColumn(ListCtrl, 1, "Quantity"),
+	ListCtrl.
+
+%% Callbacks
+handle_info({'EXIT',_, wx_deleted}, State) ->
+	{noreply,State};
+handle_info({'EXIT',_, shutdown}, State) ->
+	{noreply,State};
+handle_info({'EXIT',_, normal}, State) ->
+	{noreply,State};
+handle_info(Msg, State) ->
+	io:format("Got Info ~p~n",[Msg]),
+	{noreply,State}.
+
+handle_call(Msg, _From, State) ->
+	io:format("Got Call ~p~n",[Msg]),
+	{reply,ok,State}.
+
+handle_cast(Msg, State) ->
+	io:format("Got cast ~p~n",[Msg]),
+	{noreply,State}.
+
+%% Async Events are handled in handle_event as in handle_info
+handle_event(#wx{id = Id,
+		 event = #wxCommand{type = command_menu_selected}},
+		 State = #state{}) ->
+	case Id of
+	?wxID_ABOUT ->
+	AboutString = string:join(["Kardashiev Space Trading & Strategy Game.\n",
 					   "By:\n Björn Ingi Baldvinsson,\n",
 					   " Jón Reginbald,\n",
 					   " Stefanía Bergljót Stefánsdóttir and\n",
@@ -140,55 +166,34 @@ dialog(?ID_ABOUT, Frame) ->
 					   wx_misc:getOsDescription(),
 					   "."], 
 		""),
-	MD = wxMessageDialog:new(Frame,
-		Str,
-		[{style, ?wxOK bor ?wxICON_INFORMATION}, 
-		{caption, "About Kardashiev Game"}]),
+		wxMessageDialog:showModal(wxMessageDialog:new(State#state.win, AboutString,
+							  [{style,
+								?wxOK bor
+								?wxICON_INFORMATION bor
+								?wxSTAY_ON_TOP},
+							   {caption, "About"}])),
+		{noreply, State};
+	?wxID_EXIT ->
+		{stop, normal, State};
+	?ID_CONNECT ->
+		format(State#state.log, "Unimplemented CONNECT event: #~p ~n", [Id]),
+		{noreply, State};
+	_ ->
+		format(State#state.log, "Unhandled event: #~p ~n", [Id]),
+		{noreply, State}
+	end;
+handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
+	io:format("~p Closing window ~n",[self()]),
+	ok = wxFrame:setStatusText(Frame, "Closing...",[]),
+	{stop, normal, State};
+handle_event(Ev,State) ->
+	io:format("~p Got event ~p ~n",[?MODULE, Ev]),
+	{noreply, State}.
 
-	wxDialog:showModal(MD),
-	wxDialog:destroy(MD).
+code_change(_, _, State) ->
+	{stop, not_yet_implemented, State}.
 
-connect_d(?ID_CONNECT, Frame) ->
-	Str = "Connect to:",
-	MD = wxTextEntryDialog:new(Frame,
-		Str,
-		[{style, ?wxOK bor ?wxCANCEL}, 
-		{caption, "Connect Kardashiev Game"},
-		{value, "127.0.0.1"}]),
-
-	wxDialog:showModal(MD),
-	Target = wxTextEntryDialog:getValue(MD),
-	io:format("~p ~n", [Target]),
-	wxDialog:destroy(MD).
-
--define(FIRST_COL, 0).
--define(SECOND_COL, 1).
--define(THIRD_COL, 2).
-	
-create_resource_ctrl(Win, Options) ->
-	ListCtrl = wxListCtrl:new(Win, Options),
-	wxListCtrl:insertColumn(ListCtrl, ?FIRST_COL, "Resource"),
-	wxListCtrl:insertColumn(ListCtrl, ?SECOND_COL, "Quantity"),
-	ListCtrl.
-
-create_trade_ctrl(Win, Options) ->
-	ListCtrl = wxListCtrl:new(Win, Options),
-	wxListCtrl:insertColumn(ListCtrl, ?FIRST_COL, "Name"),
-	wxListCtrl:insertColumn(ListCtrl, ?SECOND_COL, "Have"),
-	wxListCtrl:insertColumn(ListCtrl, ?THIRD_COL, "Want"),
-	ListCtrl.
-
-create_subwindow(Parent, BoxLabel, Funs) ->
-	Panel = wxPanel:new(Parent),
-	Sz	  = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, BoxLabel}]),
-	wxPanel:setSizer(Panel, Sz),
-	Ctrls = [Fun(Panel) || Fun <- Funs],
-	[wxSizer:add(Sz, Ctrl, [{proportion, 1}, {flag, ?wxEXPAND}]) 
-	 || Ctrl <- Ctrls],
-	{Panel, Ctrls, Sz}.
-
-format(Config,Str,Args) ->
-	Log = proplists:get_value(log, Config),
-	wxTextCtrl:appendText(log, io_lib:format(Str, Args)),
-	ok.
-
+terminate(_Reason, State = #state{win=Frame}) ->
+	catch wx_object:call(State#state.log, shutdown),
+	wxFrame:destroy(Frame),
+	wx:destroy().
