@@ -4,4 +4,4 @@
 update_resources(P) -> client:notify({resources, P}).
 update_contacts(P) -> client:notify({contacts, P}).
 update_ships(P) -> client:notify({ships, P}).
-update_offers(P) -> client:notif({offers, P}).
+update_offers(P) -> client:notify({offers, P}).
