@@ -7,7 +7,8 @@
 		spawner/0,
 		print_resources/0,
 		harvest/1,
-		harvesting/1]).
+		harvesting/1,
+		stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -29,11 +30,13 @@ randomSleep(T) ->
 	sleep(random:uniform(T)).
 
 start_link() ->
-	register(solar, self()),
 	register(home, spawn(solar_system, home_planet, [])),
 	spawn(solar_system, spawner, []),
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+stop() ->
+    gen_server:cast(?SERVER, stop).
+	
 home_planet() -> 
 	io:format("Home planet~n").
 
@@ -101,6 +104,7 @@ handle_cast({harvest, Iron, Food, Gas}, State) ->
 	io:format("Gas: ~w~n", [Gas]),
 	{noreply, {#resources{iron = Iron+A, food = Food+B, gas = Gas+C}, Ships#ships{harvester = H + 1}}};	
 handle_cast(stop, State) ->
+	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
 
 handle_info(Info, State) ->
