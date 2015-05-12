@@ -41,10 +41,6 @@ list_resources(State) ->
 	{Res, _, _} = State,
 	dict:to_list(Res).
 
-% returns the ships formatted for the arbitrator
-%list_resources(State) ->
-%	{_, Ships, _} = State,
-%	[{"Cargo ship", fetch(cargo_ship, Ships)}, {"Harvester", fetch(harvester, Ships)}, {"Escort", fetch(escort, Ships)}].
 	
 start_link() ->
 	register(home, spawn(solar_system, home_planet, [])),
