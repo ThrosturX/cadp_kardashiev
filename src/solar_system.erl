@@ -40,6 +40,16 @@ randomSleep(T) ->
 randomSleep(N,M) ->
 	sleep(random(N,M)).
 
+% returns the resources formatted for the arbitrator
+list_resources(State) ->
+	{Res, _, _} = State,
+	[{"Iron", fetch(iron, Res)}, {"Food", fetch(food, Res)}, {"Gas", fetch(gas, Res)}].
+
+% returns the ships formatted for the arbitrator
+list_resources(State) ->
+	{_, Ships, _} = State,
+	[{"Cargo ship", fetch(cargo_ship, Ships)}, {"Harvester", fetch(harvester, Ships)}, {"Escort", fetch(escort, Ships)}].
+	
 start_link() ->
 	register(home, spawn(solar_system, home_planet, [])),
 	spawn(solar_system, spawner, []),
