@@ -1,9 +1,17 @@
 -module(solar_system).
 -behavior(gen_server).
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-	terminate/2, code_change/3]).
--export([start_link/0, home_planet/0, spawner/0, print_resources/0, harvest/0, harvesting/0]).
+	
+-export([start_link/0,
+		home_planet/0,
+		spawner/0,
+		print_resources/0,
+		harvest/0,
+		harvesting/0]).
+
+%% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
 
 -define(SERVER, ?MODULE).
 
@@ -25,9 +33,6 @@ start_link() ->
 	spawn(solar_system, spawner, []),
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-init([]) -> 	
-	{ok, {#resources{}, 0}}.
-
 home_planet() -> 
 	io:format("Home planet~n").
 
@@ -46,6 +51,12 @@ harvesting() ->
 spawner() -> 
 	io:format("Spawner~n").
 
+	
+%%% gen_server callbacks
+
+init([]) -> 	
+	{ok, {#resources{}, 0}}.
+	
 handle_call(resources, _From, State) ->
 	{Resources, _} = State,
 	io:format("Resources: ~p~n", [Resources]),
