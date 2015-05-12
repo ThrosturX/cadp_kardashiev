@@ -83,17 +83,34 @@ get_resource(Resource, food) ->
 get_resource(Resource, gas) ->
 	Resource#resources.gas.
 
+%% Send to all nodes trade request
 trade_request(TWant, THave) ->
 	Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
 	lists:foreach(Fun, nodes()).	
-	
+
+%% Send to all nodes cancel request	
 cancel_request(TWant, THave) ->
 	Fun = fun(N) -> send(ctrade, {TWant, THave}, N) end,
 	lists:foreach(Fun, nodes()).	
 
+%% Check if offer is possible then send offer to Node
 offer(Node, TWant, QT, THave, QH) ->
+	io:format("Offer~n"),
 	Reply = gen_server:call(solar_system, {available, THave, QH}),
-	io:format("~w", [Reply]).	
+	if 
+		Reply == noship ->
+			ok;% GUI
+		Reply == nores ->
+			ok;% GUI
+		true -> 
+			R = sendWait(offer, {TWant, QT, THave, QH}, Node, 30000),
+			if 
+				R == {accept, Node} ->
+					gen_server:cast(solar_system, {offer_accept, TWant, QT, THave, QH});
+				true ->
+					gen_server:cast(solar_system, {offer_reset, THave, QH})
+			end
+	end.	
 spawner() -> 
 	io:format("Spawner~n").
 
@@ -107,7 +124,10 @@ display_nodes() ->
 
 send(Type, Msg, Node) ->
 	gen_server:cast({solar_system, Node}, {node(), Type, Msg}).
-	
+
+sendWait(Type, Msg, Node, Time) ->	
+	gen_server:call({solar_system, Node}, {node(), Type, Msg}, Time).
+
 	
 %%% gen_server callbacks
 
