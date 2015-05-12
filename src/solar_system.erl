@@ -69,6 +69,22 @@ print_resources() ->
 
 build(Type) ->
 	io:format("Build: ~w~n", [Type]).
+	if
+		Type == 'Death Ray' ->
+			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000});
+			if
+				Reply == build_ok ->
+					io:format("Building: ~w~n", [Type]).
+				true ->
+					io:format("Not enough resources").
+			end
+		Type == 'Harvester' ->
+		Type == 'Cargo Ship' ->
+		Type == 'Escort' ->
+		true ->
+			io:format("Unkown Type: ~w", [Type]),
+			false
+	end.
 
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
@@ -141,7 +157,22 @@ init([]) ->
 	Ships = dict:from_list([{'Cargo ship', 3}, {'Harvester', 3}, {'Escort', 3}]),
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	{ok, {Resources, Ships, TradeRes}}.
-	
+
+%% S
+handle_call({build, Iron, Food, Gas}, _From, State) ->
+	{Res, Ships, Trade} = State,
+	I = dict:fetch('Iron', Res),
+	F = dict:fetch('Food', Res),
+	G = dict:fetch('Gas', Res),
+	if 
+		I >= Iron andalso F >= Food andalso G >= Gas ->
+			TempRes1 = dict:update_counter('Iron', -Iron, Res),
+			TempRes2 = dict:update_counter('Food', -Food, TempRes1),
+			NewRes = dict:update_counter('Gas', -Gas, TempRes2),	
+			{reply, build_ok, {NewRes, Ships, Trade}};	
+		true ->
+			{reply, build_nores, State}
+	end;	
 %% prints the resources and ships available
 handle_call(resources, _From, State) ->
 	{Resources, Ships, TradeRes} = State,
