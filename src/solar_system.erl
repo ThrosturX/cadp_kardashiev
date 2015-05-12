@@ -66,9 +66,12 @@ harvest(Type) ->
 	io:format("Harvest~n"),
 	Reply = gen_server:call(solar_system, start_harvest),
 	io:format("reply: ~p~n", [Reply]),
-	
-	
-	spawn(solar_system, harvesting, [Type]).
+	if
+		Reply == ship ->
+			spawn(solar_system, harvesting, [Type]);
+		true ->
+			false
+	end.
 
 % Perform a harvesting operation of the given type and after waiting for  
 % some time, sends the result to the server
