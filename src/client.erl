@@ -72,8 +72,8 @@ init(Options) ->
 	wxSplitterWindow:setSashGravity(UpperSplitter, 0.6),
 
 	% ...
-    {ResourcePanel, [], _} = create_subwindow(UpperSplitter, "Resources", []),
-    {ContactPanel, [], _} = create_subwindow(UpperSplitter, "Contacts", []),
+	{ResourcePanel, [], _} = create_subwindow(UpperSplitter, "Resources", []),
+	{ContactPanel, [], _} = create_subwindow(UpperSplitter, "Contacts", []),
 
 	%% UpperSplitter:
 	wxSplitterWindow:splitVertically(UpperSplitter, ResourcePanel, ContactPanel, [{sashPosition,600}]),
@@ -100,10 +100,13 @@ init(Options) ->
 
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts},
 
-    wxSplitterWindow:setSashGravity(TopSplitter,   1.0),
-    wxSplitterWindow:setSashGravity(UpperSplitter, 0.0),
-    wxSplitterWindow:setMinimumPaneSize(TopSplitter, 1),
-    wxSplitterWindow:setMinimumPaneSize(UpperSplitter, 1),
+	wxSplitterWindow:setSashGravity(TopSplitter,   1.0),
+	wxSplitterWindow:setSashGravity(UpperSplitter, 0.0),
+	wxSplitterWindow:setMinimumPaneSize(TopSplitter, 1),
+	wxSplitterWindow:setMinimumPaneSize(UpperSplitter, 1),
+
+	update_resources(State, [{"Food", "23"}, {"Iron", "2"}, {"Gas", "10"}]),
+	update_contacts(State, [{"Blorg", "Iron", "Wool"}, {"Narnia", "Food", "Lions"}]),
 
 	{Frame, State}.
 
@@ -129,6 +132,36 @@ create_resource_ctrl(Win, Options) ->
 	wxListCtrl:insertColumn(ListCtrl, 0, "Resource"),
 	wxListCtrl:insertColumn(ListCtrl, 1, "Quantity"),
 	ListCtrl.
+
+update_contacts(State, Contacts) ->
+	ListCtrl = State#state.contacts,
+	wxListCtrl:deleteAllItems(ListCtrl),
+	insert_contact(ListCtrl, Contacts),
+	ListCtrl.
+
+update_resources(State, Resources) ->
+	ListCtrl = State#state.resources,
+	wxListCtrl:deleteAllItems(ListCtrl),
+	insert_resource(ListCtrl, Resources),
+	ListCtrl.
+
+insert_contact(Ctrl, []) -> Ctrl;
+insert_contact(Ctrl, [C|T]) ->
+	{N, H, W} = C,
+	wxListCtrl:insertItem(Ctrl, 0, ""),
+	wxListCtrl:setItem(Ctrl, 0, 0, N),
+	wxListCtrl:setItem(Ctrl, 0, 1, H),
+	wxListCtrl:setItem(Ctrl, 0, 2, W),
+	insert_contact(Ctrl, T).
+
+insert_resource(Ctrl, []) -> Ctrl;
+insert_resource(Ctrl, [R|T]) ->
+	{N, Q} = R,
+	I = 0,
+	wxListCtrl:insertItem(Ctrl, I, ""),
+	wxListCtrl:setItem(Ctrl, I, 0, N),
+	wxListCtrl:setItem(Ctrl, I, 1, Q),
+	insert_resource(Ctrl, T).
 
 %% Callbacks
 handle_info({'EXIT',_, wx_deleted}, State) ->
