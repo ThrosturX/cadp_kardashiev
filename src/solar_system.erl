@@ -11,7 +11,8 @@
 		connect/1,
 		display_nodes/0,
 		send/3,
-		trade_request/2]).
+		trade_request/2,
+		offer/5]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -75,12 +76,41 @@ harvesting(mclass) ->
 	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, 0, random:uniform(?MAX_HARVEST), 0}).
 
+get_resource(Resource, iron) ->
+	Resource#resources.iron;
+get_resource(Resource, food) ->
+	Resource#resources.food;
+get_resource(Resource, gas) ->
+	Resource#resources.gas.
 
+%% Send to all nodes trade request
 trade_request(TWant, THave) ->
 	Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
 	lists:foreach(Fun, nodes()).	
-	
 
+%% Send to all nodes cancel request	
+cancel_request(TWant, THave) ->
+	Fun = fun(N) -> send(ctrade, {TWant, THave}, N) end,
+	lists:foreach(Fun, nodes()).	
+
+%% Check if offer is possible then send offer to Node
+offer(Node, TWant, QT, THave, QH) ->
+	io:format("Offer~n"),
+	Reply = gen_server:call(solar_system, {available, THave, QH}),
+	if 
+		Reply == noship ->
+			ok;% GUI
+		Reply == nores ->
+			ok;% GUI
+		true -> 
+			R = sendWait(offer, {TWant, QT, THave, QH}, Node, 30000),
+			if 
+				R == {accept, Node} ->
+					gen_server:cast(solar_system, {offer_accept, TWant, QT, THave, QH});
+				true ->
+					gen_server:cast(solar_system, {offer_reset, THave, QH})
+			end
+	end.	
 spawner() -> 
 	io:format("Spawner~n").
 
@@ -94,33 +124,69 @@ display_nodes() ->
 
 send(Type, Msg, Node) ->
 	gen_server:cast({solar_system, Node}, {node(), Type, Msg}).
-	
+
+sendWait(Type, Msg, Node, Time) ->	
+	gen_server:call({solar_system, Node}, {node(), Type, Msg}, Time).
+
 	
 %%% gen_server callbacks
 
 init([]) -> 
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	random:seed(now()),
-	{ok, {#resources{}, #ships{}}}.
+	{ok, {#resources{}, #ships{}, #resources{}}}.
 	
 handle_call(resources, _From, State) ->
-	{Resources, Ships} = State,
+	{Resources, Ships, _} = State,
 	io:format("Resources: ~p~n", [Resources]),
 	io:format("Ships: ~p~n", [Ships]),
 	{reply, [], State};
 handle_call(start_harvest, _From, State) ->
 	io:format("check if enough ships~n"),
-	{Res, Ships} = State,
+	{Res, Ships, Trade} = State,
 	H = Ships#ships.harvester,
 	if H == 0 -> {reply, [noship], State};
-	true -> {reply, [ship], {Res, Ships#ships{harvester = H - 1}}}
+	true -> {reply, [ship], {Res, Ships#ships{harvester = H - 1}, Trade}}
+	end;
+handle_call({available, THave, QH}, _From, State) ->
+	io:format("Check if enough resources~n"),
+	{Res, Ships, Trade} = State,
+	C = Ships#ships.cargo_ship,
+	if 
+		C == 0 -> 
+			{reply, [noship], State};
+		true -> 
+			R = get_resource(Res, THave),
+			if 
+				R >= QH -> 
+					T = get_resource(Trade, THave),
+					if 
+						THave == iron ->
+							{reply, [ok], 
+							{Res#resources{iron = R - QH}, 
+							Ships#ships{cargo_ship = C - 1}, 
+							Trade#resources{iron = T + QH}}};
+						THave == food ->
+							{reply, [ok], 
+							{Res#resources{food = R - QH}, 
+							Ships#ships{cargo_ship = C - 1}, 
+							Trade#resources{food = T + QH}}};
+						true -> 
+							{reply, [ok], 
+							{Res#resources{gas = R - QH}, 
+							Ships#ships{cargo_ship = C - 1}, 
+							Trade#resources{gas = T + QH}}}
+					end;
+					true -> 
+						{reply, [nores], State}
+			end
 	end;	
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
 handle_cast({harvest, Iron, Food, Gas}, State) ->
 	io:format("harvest cast~n"),
-	{Resources, Ships} = State,
+	{Resources, Ships, Trade} = State,
 	H = Ships#ships.harvester,
 	A = Resources#resources.iron,
 	io:format("Iron: ~w~n", [Iron]),
@@ -128,13 +194,17 @@ handle_cast({harvest, Iron, Food, Gas}, State) ->
 	io:format("Food: ~w~n", [Food]),
 	C = Resources#resources.gas,
 	io:format("Gas: ~w~n", [Gas]),
-	{noreply, {#resources{iron = Iron+A, food = Food+B, gas = Gas+C}, Ships#ships{harvester = H + 1}}};	
+	{noreply, {#resources{iron = Iron+A, food = Food+B, gas = Gas+C}, Ships#ships{harvester = H + 1}, Trade}};	
 handle_cast({Node, msg, Msg}, State) ->
 	io:format("Message from ~w: ~w~n", [Node, Msg]),
 	{noreply, State};
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
 	%TODO: Add request to list of trade requests in GUI
+	{noreply, State};
+handle_cast({Node, ctrade, {TWant, THave}}, State) ->
+	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
+	%TODO: remove request to list of trade requests in GUI
 	{noreply, State};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
