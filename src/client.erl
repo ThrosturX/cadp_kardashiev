@@ -66,33 +66,35 @@ init(Options) ->
 
 	_SB = wxFrame:createStatusBar(Frame, []),
 
-	TopSplitter = wxSplitterWindow:new(Frame, [{style, ?wxSP_NOBORDER}]),
+	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
+
+	TopSplitter   = wxSplitterWindow:new(Frame, [{style, ?wxSP_NOBORDER}]),
 	UpperSplitter = wxSplitterWindow:new(TopSplitter, [{style, ?wxSP_NOBORDER}]),
-	LeftSplitter = wxSplitterWindow:new(UpperSplitter, [{style, ?wxSP_NOBORDER}]),
-	LeftSplitter2 = wxSplitterWindow:new(LeftSplitter, [{style, ?wxSP_NOBORDER}]),
+	ResSplitter   = wxSplitterWindow:new(UpperSplitter, [{style, ?wxSP_NOBORDER}]),
+	TrdSplitter   = wxSplitterWindow:new(UpperSplitter, [{style, ?wxSP_NOBORDER}]),
+% 
+	{ResourcePanel, [], _} = create_subwindow(ResSplitter, "Resources", []),
+	{ShipPanel, [], _}     = create_subwindow(ResSplitter, "Ships", []),
 
-	wxSplitterWindow:setSashGravity(TopSplitter,   0.8),
-	wxSplitterWindow:setSashGravity(UpperSplitter, 0.6),
-	wxSplitterWindow:setSashGravity(LeftSplitter, 0.5),
-	wxSplitterWindow:setSashGravity(LeftSplitter2, 0.5),
+	{ContactPanel, [], _}  = create_subwindow(TrdSplitter, "Contacts", []),
+	{OfferPanel, [], _}    = create_subwindow(TrdSplitter, "Offers", []),
 
-	{ResourcePanel, [], _} = create_subwindow(LeftSplitter, "Resources", []),
-	{ContactPanel, [], _} = create_subwindow(UpperSplitter, "Contacts", []),
-	{ShipPanel, [], _} = create_subwindow(LeftSplitter2, "Ships", []),
-	{OfferPanel, [], _} = create_subwindow(LeftSplitter2, "Offers", []),
+	wxSplitterWindow:splitVertically(UpperSplitter, ResSplitter, TrdSplitter, [{sashPosition, 500}]),
+	wxSplitterWindow:splitHorizontally(ResSplitter, ResourcePanel, ShipPanel, [{sashPosition, 300}]),
+	wxSplitterWindow:splitHorizontally(TrdSplitter, ContactPanel, OfferPanel, [{sashPosition, 300}]),
 
-	%% UpperSplitter:
-	wxSplitterWindow:splitVertically(UpperSplitter, LeftSplitter, ContactPanel, [{sashPosition,600}]),
-	wxSplitterWindow:splitHorizontally(LeftSplitter, ResourcePanel, LeftSplitter2, [{sashPosition,200}]),
-	wxSplitterWindow:splitHorizontally(LeftSplitter2, ShipPanel, OfferPanel, [{sashPosition,400}]),
+	{Resources, RSZ} = create_resource_ctrl(ResourcePanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+	{Contacts, CSZ}  = create_trade_ctrl(ContactPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
 
-	Resources = create_resource_ctrl(ResourcePanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
-	Contacts = create_trade_ctrl(ContactPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+	{Ships, SSZ}     = create_ship_ctrl(ShipPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
+	{Offers, OSZ}    = create_offer_ctrl(OfferPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
 
-	Ships = create_ship_ctrl(ShipPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
-	Offers = create_offer_ctrl(OfferPanel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}]),
-	
-	%% TopSplitter: 
+	wxSizer:add(Sizer, RSZ),
+	wxSizer:addSpacer(Sizer, 20),
+	wxSizer:add(Sizer, CSZ),
+	wxSizer:add(Sizer, SSZ),
+	wxSizer:add(Sizer, OSZ),
+
 	AddEvent = fun(Parent) ->
 			   EventText = wxTextCtrl:new(Parent, 
 						  ?wxID_ANY, 
@@ -104,9 +106,8 @@ init(Options) ->
 		   end,
 
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
+	wxSplitterWindow:splitHorizontally(TopSplitter, UpperSplitter, EvPanel, [{sashPosition, 600}]),
 	
-	wxSplitterWindow:splitHorizontally(TopSplitter, UpperSplitter, EvPanel, [{sashPosition,100}]),
-
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
 	Watcher = whereis(refresher),
 	if
@@ -123,13 +124,6 @@ init(Options) ->
 
 	wxFrame:show(Frame),
 
-	wxSplitterWindow:setSashGravity(TopSplitter,   1.0),
-	wxSplitterWindow:setSashGravity(UpperSplitter, 0.0),
-	wxSplitterWindow:setMinimumPaneSize(TopSplitter, 1),
-	wxSplitterWindow:setMinimumPaneSize(UpperSplitter, 1),
-	wxSplitterWindow:setMinimumPaneSize(LeftSplitter, 1),
-	wxSplitterWindow:setMinimumPaneSize(LeftSplitter2, 1),
-
 	{Frame, State}.
 
 %% Helpers
@@ -143,32 +137,40 @@ create_subwindow(Parent, BoxLabel, Funs) ->
 	{Panel, Ctrls, Sz}.
 
 create_trade_ctrl(Win, Options) ->
+	Sizer = wxStaticBoxSizer:new(?wxVERTICAL, Win, [{label, "Contacts"}]),
 	ListCtrl = wxListCtrl:new(Win, Options),
 	wxListCtrl:insertColumn(ListCtrl, 0, "Name"),
 	wxListCtrl:insertColumn(ListCtrl, 1, "Have"),
 	wxListCtrl:insertColumn(ListCtrl, 2, "Want"),
-	ListCtrl.
+	wxSizer:add(Sizer, ListCtrl),
+	{ListCtrl, Sizer}.
 
 create_ship_ctrl(Win, Options) ->
+	Sizer = wxStaticBoxSizer:new(?wxVERTICAL, Win, [{label, "Ships"}]),
 	ListCtrl = wxListCtrl:new(Win, Options),
 	wxListCtrl:insertColumn(ListCtrl, 0, "Ship"),
 	wxListCtrl:insertColumn(ListCtrl, 1, "Quantity"),
-	ListCtrl.
+	wxSizer:add(Sizer, ListCtrl),
+	{ListCtrl, Sizer}.
 
 create_resource_ctrl(Win, Options) ->
+	Sizer = wxStaticBoxSizer:new(?wxVERTICAL, Win, [{label, "Resources"}]),
 	ListCtrl = wxListCtrl:new(Win, Options),
 	wxListCtrl:insertColumn(ListCtrl, 0, "Resource"),
 	wxListCtrl:insertColumn(ListCtrl, 1, "Quantity"),
-	ListCtrl.
+	wxSizer:add(Sizer, ListCtrl),
+	{ListCtrl, Sizer}.
 
 create_offer_ctrl(Win, Options) ->
+	Sizer = wxStaticBoxSizer:new(?wxVERTICAL, Win, [{label, "Offers"}]),
 	ListCtrl = wxListCtrl:new(Win, Options),
 	wxListCtrl:insertColumn(ListCtrl, 0, "Name"),
 	wxListCtrl:insertColumn(ListCtrl, 1, "Qty (want)"),
 	wxListCtrl:insertColumn(ListCtrl, 2, "Want"),
 	wxListCtrl:insertColumn(ListCtrl, 3, "Offer"),
 	wxListCtrl:insertColumn(ListCtrl, 4, "Qty (offer)"),
-	ListCtrl.
+	wxSizer:add(Sizer, ListCtrl),
+	{ListCtrl, Sizer}.
 
 update_offers(State, Contacts) ->
 	ListCtrl = State#state.offers,
