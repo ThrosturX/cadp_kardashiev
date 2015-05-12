@@ -11,8 +11,7 @@
 		connect/1,
 		display_nodes/0,
 		send/3,
-		trade_request/2,
-		offer/5]).
+		trade_request/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -94,23 +93,23 @@ cancel_request(TWant, THave) ->
 	lists:foreach(Fun, nodes()).	
 
 %% Check if offer is possible then send offer to Node
-offer(Node, TWant, QT, THave, QH) ->
-	io:format("Offer~n"),
-	Reply = gen_server:call(solar_system, {available, THave, QH}),
-	if 
-		Reply == noship ->
-			ok;% GUI
-		Reply == nores ->
-			ok;% GUI
-		true -> 
-			R = sendWait(offer, {TWant, QT, THave, QH}, Node, 30000),
-			if 
-				R == {accept, Node} ->
-					gen_server:cast(solar_system, {offer_accept, TWant, QT, THave, QH});
-				true ->
-					gen_server:cast(solar_system, {offer_reset, THave, QH})
-			end
-	end.	
+%%offer(Node, TWant, QT, THave, QH) ->
+%%	io:format("Offer~n"),
+%%	Reply = gen_server:call(solar_system, {trade_available, THave, QH}),
+%%	if 
+%%		Reply == noship ->
+%%			ok;% GUI
+%%		Reply == nores ->
+%%			ok;% GUI
+%%		true -> 
+%%			R = sendWait(offer, {TWant, QT, THave, QH}, Node, 30000),
+%%			if 
+%%				R == {accept, Node} ->
+%%					gen_server:cast(solar_system, {offer_accept, TWant, QT, THave, QH});
+%%				true ->
+%%					gen_server:cast(solar_system, {offer_reset, THave, QH})
+%%			end
+%%	end.	
 spawner() -> 
 	io:format("Spawner~n").
 
@@ -134,21 +133,30 @@ sendWait(Type, Msg, Node, Time) ->
 init([]) -> 
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	random:seed(now()),
-	{ok, {#resources{}, #ships{}, #resources{}}}.
+	%The state consists of 3 dictionaries: Resources, Ships and TradeRes.
+	Resources = dict:from_list([{iron, 0}, {food, 0}, {gas, 0}]),
+	Ships = dict:from_list([{cargo_ship, 3}, {harvester, 3}, {escort, 3}]),
+	TradeRes = dict:from_list([{iron, 0}, {food, 0}, {gas, 0}]),
+	{ok, {Resources, Ships, TradeRes}}.
 	
 handle_call(resources, _From, State) ->
-	{Resources, Ships, _} = State,
-	io:format("Resources: ~p~n", [Resources]),
-	io:format("Ships: ~p~n", [Ships]),
+	{Resources, Ships, TradeRes} = State,
+	io:format("Resources: ~p~n", [dict:to_list(Resources)]),
+	io:format("Ships: ~p~n", [dict:to_list(Ships)]),
+	io:format("TradeRes: ~p~n", [dict:to_list(TradeRes)]),
 	{reply, [], State};
 handle_call(start_harvest, _From, State) ->
 	io:format("check if enough ships~n"),
 	{Res, Ships, Trade} = State,
-	H = Ships#ships.harvester,
-	if H == 0 -> {reply, [noship], State};
-	true -> {reply, [ship], {Res, Ships#ships{harvester = H - 1}, Trade}}
+	H = dict:fetch(harvester, Ships),
+	if 
+		H == 0 -> 
+			{reply, [noship], State};
+		true -> 
+			NewShips = dict:update_counter(harvester, -1, Ships),
+			{reply, [ship], {Res, NewShips, Trade}}
 	end;
-handle_call({available, THave, QH}, _From, State) ->
+handle_call({trade_available, THave, QH}, _From, State) ->
 	io:format("Check if enough resources~n"),
 	{Res, Ships, Trade} = State,
 	C = Ships#ships.cargo_ship,
@@ -187,14 +195,14 @@ handle_call(_Msg, _From, State) ->
 handle_cast({harvest, Iron, Food, Gas}, State) ->
 	io:format("harvest cast~n"),
 	{Resources, Ships, Trade} = State,
-	H = Ships#ships.harvester,
-	A = Resources#resources.iron,
+	NewShips = dict:update_counter(harvester, 1, Ships),
+	T1 = dict:update_counter(iron, Iron, Resources),
+	T2 = dict:update_counter(food, Food, T1),
+	NewRes = dict:update_counter(gas, Gas, T2),
 	io:format("Iron: ~w~n", [Iron]),
-	B = Resources#resources.food,
 	io:format("Food: ~w~n", [Food]),
-	C = Resources#resources.gas,
 	io:format("Gas: ~w~n", [Gas]),
-	{noreply, {#resources{iron = Iron+A, food = Food+B, gas = Gas+C}, Ships#ships{harvester = H + 1}, Trade}};	
+	{noreply, {NewRes, NewShips, Trade}};
 handle_cast({Node, msg, Msg}, State) ->
 	io:format("Message from ~w: ~w~n", [Node, Msg]),
 	{noreply, State};
