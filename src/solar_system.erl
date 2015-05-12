@@ -42,6 +42,9 @@ list_resources(State) ->
 	{Res, _, _} = State,
 	dict:to_list(Res).
 
+list_ships(State) -> 
+	{_, Ships, _} = State,
+	dict:to_list(Ships).
 	
 start_link() ->
 	register(home, spawn(solar_system, home_planet, [])),
@@ -148,6 +151,7 @@ handle_call(start_harvest, _From, State) ->
 			{reply, noship, State};
 		true -> 
 			NewShips = dict:update_counter('Harvester', -1, Ships),
+			%arbitrator:update_ships(dict:to_list(NewShips)),
 			{reply, ship, {Res, NewShips, Trade}}
 	end;
 %% checks if the resources and ships needed for the given trade is available
@@ -165,6 +169,8 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 					NewRes = dict:update_counter(Type, -Qty, Res),
 					NewShips = dict:update_counter('Cargo ship', -1, Ships),
 					NewTrade = dict:update_counter(Type, Qty, Trade),
+					arbitrator:update_resources(dict:to_list(NewRes)),
+					%arbitrator:update_ships(dict:to_list(NewShips)),
 					{reply, ok, {NewRes, NewShips, NewTrade}};
 				true -> 
 					{reply, nores, State}
@@ -179,6 +185,8 @@ handle_cast({harvest, Type, Qty}, State) ->
 	{Resources, Ships, Trade} = State,
 	NewShips = dict:update_counter('Harvester', 1, Ships),
 	NewRes = dict:update_counter(Type, Qty, Resources),
+	%arbitrator:update_ships(dict:to_list(NewShips)),
+	arbitrator:update_resources(dict:to_list(NewRes)),
 	io:format("~w: ~w~n", [Type, Qty]),
 	{noreply, {NewRes, NewShips, Trade}};	
 %% receives a message from another player
