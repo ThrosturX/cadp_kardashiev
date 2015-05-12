@@ -19,12 +19,9 @@
 
 -define(SERVER, ?MODULE).
 -define(MAX_HARVEST, 10).
--define(MAX_HARVEST_TIME, 12000).
--define(MIN_HARVEST_TIME, 6000).
+-define(MAX_HARVEST_TIME, 4000).
+-define(MIN_HARVEST_TIME, 2000).
 
-
--record(resources, {iron = 0, food = 0, gas = 0}).
--record(ships, {cargo_ship = 3, harvester = 3, escort = 3}).
 
 random(N,M) -> 
 	N + random:uniform(M-N).
@@ -63,28 +60,11 @@ harvest(Type) ->
 
 % Perform a harvesting operation of the given type and after waiting for  
 % some time, sends the result to the server
-harvesting(gas) ->
+harvesting(Type) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
 	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
-	gen_server:cast(solar_system, {harvest, 0, 0, random:uniform(?MAX_HARVEST)});
-harvesting(asteroid) ->
-	random:seed(now()),
-	io:format("Harvesting~n"),
-	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
-	gen_server:cast(solar_system, {harvest, random:uniform(?MAX_HARVEST), 0, 0});
-harvesting(mclass) ->
-	random:seed(now()),
-	io:format("Harvesting~n"),
-	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
-	gen_server:cast(solar_system, {harvest, 0, random:uniform(?MAX_HARVEST), 0}).
-
-get_resource(Resource, iron) ->
-	Resource#resources.iron;
-get_resource(Resource, food) ->
-	Resource#resources.food;
-get_resource(Resource, gas) ->
-	Resource#resources.gas.
+	gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST)}).
 
 %% Send to all nodes trade request
 trade_request(TWant, THave) ->
@@ -167,50 +147,32 @@ handle_call(start_harvest, _From, State) ->
 handle_call({trade_available, THave, QH}, _From, State) ->
 	io:format("Check if enough resources~n"),
 	{Res, Ships, Trade} = State,
-	C = Ships#ships.cargo_ship,
+	C = dict:fetch(cargo_ship, Ships),
 	if 
 		C == 0 -> 
 			{reply, [noship], State};
 		true -> 
-			R = get_resource(Res, THave),
+			R = dict:fetch(THave, Res),
 			if 
-				R >= QH -> 
-					T = get_resource(Trade, THave),
-					if 
-						THave == iron ->
-							{reply, [ok], 
-							{Res#resources{iron = R - QH}, 
-							Ships#ships{cargo_ship = C - 1}, 
-							Trade#resources{iron = T + QH}}};
-						THave == food ->
-							{reply, [ok], 
-							{Res#resources{food = R - QH}, 
-							Ships#ships{cargo_ship = C - 1}, 
-							Trade#resources{food = T + QH}}};
-						true -> 
-							{reply, [ok], 
-							{Res#resources{gas = R - QH}, 
-							Ships#ships{cargo_ship = C - 1}, 
-							Trade#resources{gas = T + QH}}}
-					end;
-					true -> 
-						{reply, [nores], State}
+				R >= QH ->
+					NewRes = dict:update_counter(THave, -QH, Res),
+					NewShips = dict:update_counter(cargo_ship, -1, Ships),
+					NewTrade = dict:update_counter(THave, QH, Trade),
+					{reply, [ok], {NewRes, NewShips, NewTrade}};
+				true -> 
+					{reply, [nores], State}
 			end
 	end;	
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
 %% ends the harvest and increases our current resources accordingly
-handle_cast({harvest, Iron, Food, Gas}, State) ->
+handle_cast({harvest, Type, Qty}, State) ->
 	io:format("harvest cast~n"),
 	{Resources, Ships, Trade} = State,
 	NewShips = dict:update_counter(harvester, 1, Ships),
-	T1 = dict:update_counter(iron, Iron, Resources),
-	T2 = dict:update_counter(food, Food, T1),
-	NewRes = dict:update_counter(gas, Gas, T2),
-	io:format("Iron: ~w~n", [Iron]),
-	io:format("Food: ~w~n", [Food]),
-	io:format("Gas: ~w~n", [Gas]),
+	NewRes = dict:update_counter(Type, Qty, Resources),
+	io:format("~w: ~w~n", [Type, Qty]),
 	{noreply, {NewRes, NewShips, Trade}};	
 %% receives a message from another player
 handle_cast({Node, msg, Msg}, State) ->
