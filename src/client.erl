@@ -8,7 +8,7 @@
 
 -behaviour(wx_object).
 
--record(state, {win, log, resources, contacts, env}).
+-record(state, {win, log, resources, contacts, ships, offers, env}).
 
 -define(ID_DEATH_RAY, 101).
 -define(ID_HARVEST, 102).
@@ -130,10 +130,37 @@ create_trade_ctrl(Win, Options) ->
 	wxListCtrl:insertColumn(ListCtrl, 2, "Want"),
 	ListCtrl.
 
+create_ship_ctrl(Win, Options) ->
+	ListCtrl = wxListCtrl:new(Win, Options),
+	wxListCtrl:insertColumn(ListCtrl, 0, "Ship"),
+	wxListCtrl:insertColumn(ListCtrl, 1, "Quantity"),
+	ListCtrl.
+
 create_resource_ctrl(Win, Options) ->
 	ListCtrl = wxListCtrl:new(Win, Options),
 	wxListCtrl:insertColumn(ListCtrl, 0, "Resource"),
 	wxListCtrl:insertColumn(ListCtrl, 1, "Quantity"),
+	ListCtrl.
+
+create_offer_ctrl(Win, Options) ->
+	ListCtrl = wxListCtrl:new(Win, Options),
+	wxListCtrl:insertColumn(ListCtrl, 0, "Name"),
+	wxListCtrl:insertColumn(ListCtrl, 1, "Qty (want)"),
+	wxListCtrl:insertColumn(ListCtrl, 2, "Want"),
+	wxListCtrl:insertColumn(ListCtrl, 3, "Offer"),
+	wxListCtrl:insertColumn(ListCtrl, 4, "Qty (offer)"),
+	ListCtrl.
+
+update_offers(State, Contacts) ->
+	ListCtrl = State#state.offers,
+	wxListCtrl:deleteAllItems(ListCtrl),
+	insert_contact(ListCtrl, Contacts),
+	ListCtrl.
+
+update_ships(State, Ships) ->
+	ListCtrl = State#state.ships,
+	wxListCtrl:deleteAllItems(ListCtrl),
+	insert_resource(ListCtrl, Ships), % not a typo!! code re-use
 	ListCtrl.
 
 update_contacts(State, Contacts) ->
@@ -235,11 +262,17 @@ terminate(_Reason, State = #state{win=Frame}) ->
 	wx:destroy().
 
 handle_update(State) ->
+	Env = State#state.env,
+	wx:set_env(Env),
 	receive
 		{resources, L} ->
-			Env = State#state.env,
-			wx:set_env(Env),
-			update_resources(State, L)
+			update_resources(State, L);
+		{contacts, L} ->
+			update_contacts(State, L);
+		{ships, L} ->
+			update_ships(State, L);
+		{offers, L} ->
+			update_offers(State, L)
 	end,
 	handle_update(State).
 
