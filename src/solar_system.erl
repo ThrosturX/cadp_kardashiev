@@ -20,6 +20,9 @@
 -record(resources, {iron = 0, food = 0, gas = 0}).
 -record(ships, {cargo_ship = 3, harvester = 3, escort = 3}).
 
+random(N,M) -> 
+	N + random:uniform(M-N).
+
 sleep(T) ->
 	receive
 	after T -> true
