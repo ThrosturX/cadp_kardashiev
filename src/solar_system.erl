@@ -1,6 +1,5 @@
 -module(solar_system).
 -behavior(gen_server).
-
 	
 -export([start_link/0,
 		home_planet/0,
@@ -8,7 +7,10 @@
 		print_resources/0,
 		harvest/1,
 		harvesting/1,
-		stop/0]).
+		stop/0,
+		connect/1,
+		display_nodes/0,
+		send/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -64,7 +66,7 @@ harvesting(gas) ->
 harvesting(asteroid) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomsleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
+	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, random:uniform(?MAX_HARVEST), 0, 0});
 harvesting(mclass) ->
 	random:seed(now()),
@@ -76,6 +78,18 @@ harvesting(mclass) ->
 
 spawner() -> 
 	io:format("Spawner~n").
+
+%%% Network functions 
+
+connect(Node) ->
+	net_kernel:connect_node(Node).
+
+display_nodes() ->
+	nodes().	
+
+send(Msg, Node) ->
+	gen_server:cast({solar_system, Node}, {msg, Msg}).
+
 	
 %%% gen_server callbacks
 
@@ -110,6 +124,9 @@ handle_cast({harvest, Iron, Food, Gas}, State) ->
 	C = Resources#resources.gas,
 	io:format("Gas: ~w~n", [Gas]),
 	{noreply, {#resources{iron = Iron+A, food = Food+B, gas = Gas+C}, Ships#ships{harvester = H + 1}}};	
+handle_cast({msg, Msg}, State) ->
+	io:format("Message ~w~n", [Msg]),
+	{noreply, State};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
