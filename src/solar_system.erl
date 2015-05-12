@@ -15,6 +15,8 @@
 
 -define(SERVER, ?MODULE).
 -define(MAX_HARVEST, 10).
+-define(MAX_HARVEST_TIME, 12000).
+-define(MIN_HARVEST_TIME, 6000).
 
 
 -record(resources, {iron = 0, food = 0, gas = 0}).
@@ -52,17 +54,17 @@ harvest(Type) ->
 harvesting(gas) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(2000),
+	randomSleep(random(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME)),
 	gen_server:cast(solar_system, {harvest, 0, 0, random:uniform(?MAX_HARVEST)});
 harvesting(asteroid) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(2000),
+	randomSleep(random(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME)),
 	gen_server:cast(solar_system, {harvest, random:uniform(?MAX_HARVEST), 0, 0});
 harvesting(mclass) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(2000),
+	randomSleep(random(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME)),
 	gen_server:cast(solar_system, {harvest, 0, random:uniform(?MAX_HARVEST), 0}).
 	
 	
