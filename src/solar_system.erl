@@ -67,6 +67,9 @@ home_planet() ->
 print_resources() ->
 	gen_server:call(solar_system, resources).
 
+build(Type) ->
+	io:format("Build: ~w~n", [Type]).
+
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
 harvest(Type) ->
