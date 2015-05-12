@@ -16,10 +16,15 @@
 
 -define(SERVER, ?MODULE).
 -define(MAX_HARVEST, 10).
+-define(MAX_HARVEST_TIME, 12000).
+-define(MIN_HARVEST_TIME, 6000).
 
 
 -record(resources, {iron = 0, food = 0, gas = 0}).
 -record(ships, {cargo_ship = 3, harvester = 3, escort = 3}).
+
+random(N,M) -> 
+	N + random:uniform(M-N).
 
 sleep(T) ->
 	receive
@@ -28,6 +33,8 @@ sleep(T) ->
 
 randomSleep(T) ->
 	sleep(random:uniform(T)).
+randomSleep(N,M) ->
+	sleep(random(N,M)).
 
 start_link() ->
 	register(home, spawn(solar_system, home_planet, [])),
@@ -52,17 +59,17 @@ harvest(Type) ->
 harvesting(gas) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(2000),
+	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, 0, 0, random:uniform(?MAX_HARVEST)});
 harvesting(asteroid) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(2000),
+	randomsleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, random:uniform(?MAX_HARVEST), 0, 0});
 harvesting(mclass) ->
 	random:seed(now()),
 	io:format("Harvesting~n"),
-	randomSleep(2000),
+	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, 0, random:uniform(?MAX_HARVEST), 0}).
 	
 	
