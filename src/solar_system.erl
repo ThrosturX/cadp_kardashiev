@@ -11,7 +11,8 @@
 		connect/1,
 		display_nodes/0,
 		send/3,
-		trade_request/2]).
+		trade_request/2,
+		offer/5]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -92,23 +93,19 @@ cancel_request(TWant, THave) ->
 	lists:foreach(Fun, nodes()).	
 
 %% Check if offer is possible then send offer to Node
-%%offer(Node, TWant, QT, THave, QH) ->
-%%	io:format("Offer~n"),
-%%	Reply = gen_server:call(solar_system, {trade_available, THave, QH}),
-%%	if 
-%%		Reply == noship ->
-%%			ok;% GUI
-%%		Reply == nores ->
-%%			ok;% GUI
-%%		true -> 
-%%			R = sendWait(offer, {TWant, QT, THave, QH}, Node, 30000),
-%%			if 
-%%				R == {accept, Node} ->
-%%					gen_server:cast(solar_system, {offer_accept, TWant, QT, THave, QH});
-%%				true ->
-%%					gen_server:cast(solar_system, {offer_reset, THave, QH})
-%%			end
-%%	end.	
+offer(Node, TWant, QT, THave, QH) ->
+	io:format("Offer~n"),
+	Reply = gen_server:call(solar_system, {reserve_resource, THave, QH}),
+	if 
+		Reply == noship ->
+			{ok, Reply};% TODO: Inform GUI
+		Reply == nores ->
+			{ok, Reply};% TODO: Inform GUI
+		true ->
+			% TODO: Update offers in GUI.
+			send(offer, {TWant, QT, THave, QH}, Node)
+	end.
+	
 spawner() -> 
 	io:format("Spawner~n").
 
@@ -157,27 +154,26 @@ handle_call(start_harvest, _From, State) ->
 			NewShips = dict:update_counter('Harvester', -1, Ships),
 			{reply, ship, {Res, NewShips, Trade}}
 	end;
-
 %% checks if the resources and ships needed for the given trade is available
-handle_call({trade_available, THave, QH}, _From, State) ->
+handle_call({reserve_resource, Type, Qty}, _From, State) ->
 	io:format("Check if enough resources~n"),
 	{Res, Ships, Trade} = State,
 	C = dict:fetch('Cargo ship', Ships),
 	if 
 		C == 0 -> 
-			{reply, [noship], State};
+			{reply, noship, State};
 		true -> 
-			R = dict:fetch(THave, Res),
+			T = dict:fetch(Type, Res),
 			if 
-				R >= QH ->
-					NewRes = dict:update_counter(THave, -QH, Res),
+				T >= Qty ->
+					NewRes = dict:update_counter(Type, -Qty, Res),
 					NewShips = dict:update_counter('Cargo ship', -1, Ships),
-					NewTrade = dict:update_counter(THave, QH, Trade),
-					{reply, [ok], {NewRes, NewShips, NewTrade}};
+					NewTrade = dict:update_counter(Type, Qty, Trade),
+					{reply, ok, {NewRes, NewShips, NewTrade}};
 				true -> 
-					{reply, [nores], State}
+					{reply, nores, State}
 			end
-	end;	
+	end;
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
@@ -202,6 +198,10 @@ handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
 	%TODO: remove request to list of trade requests in GUI
+	{noreply, State};
+handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
+	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
+	%TODO: Update offer list in GUI.
 	{noreply, State};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
