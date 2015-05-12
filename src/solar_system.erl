@@ -10,7 +10,8 @@
 		stop/0,
 		connect/1,
 		display_nodes/0,
-		send/2]).
+		send/3,
+		trade_request/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -73,7 +74,11 @@ harvesting(mclass) ->
 	io:format("Harvesting~n"),
 	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, 0, random:uniform(?MAX_HARVEST), 0}).
-	
+
+
+trade_request(TWant, THave) ->
+	Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
+	lists:foreach(Fun, nodes()).	
 	
 
 spawner() -> 
@@ -87,9 +92,9 @@ connect(Node) ->
 display_nodes() ->
 	nodes().	
 
-send(Msg, Node) ->
-	gen_server:cast({solar_system, Node}, {msg, Msg}).
-
+send(Type, Msg, Node) ->
+	gen_server:cast({solar_system, Node}, {node(), Type, Msg}).
+	
 	
 %%% gen_server callbacks
 
@@ -124,8 +129,12 @@ handle_cast({harvest, Iron, Food, Gas}, State) ->
 	C = Resources#resources.gas,
 	io:format("Gas: ~w~n", [Gas]),
 	{noreply, {#resources{iron = Iron+A, food = Food+B, gas = Gas+C}, Ships#ships{harvester = H + 1}}};	
-handle_cast({msg, Msg}, State) ->
-	io:format("Message ~s~n", [Msg]),
+handle_cast({Node, msg, Msg}, State) ->
+	io:format("Message from ~w: ~w~n", [Node, Msg]),
+	{noreply, State};
+handle_cast({Node, rtrade, {TWant, THave}}, State) ->
+	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
+	%TODO: Add request to list of trade requests in GUI
 	{noreply, State};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
