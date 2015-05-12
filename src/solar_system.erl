@@ -125,7 +125,7 @@ handle_cast({harvest, Iron, Food, Gas}, State) ->
 	io:format("Gas: ~w~n", [Gas]),
 	{noreply, {#resources{iron = Iron+A, food = Food+B, gas = Gas+C}, Ships#ships{harvester = H + 1}}};	
 handle_cast({msg, Msg}, State) ->
-	io:format("Message ~w~n", [Msg]),
+	io:format("Message ~s~n", [Msg]),
 	{noreply, State};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
