@@ -4,6 +4,7 @@
 	update_ships/1, 
 	update_offers/1, 
 	receive_message/1, 
+	format/2, 
 	die/0, 
 	connect/1, 
 	request_trade/2, 
@@ -23,6 +24,7 @@ update_resources(P) -> client:notify({resources, dic_list_atom_to_string(P)}).
 update_ships(P) -> client:notify({ships, dic_list_atom_to_string(P)}).
 update_offers(P) -> client:notify({offers, dic_list_atom_to_string(P)}).%need to change
 receive_message(M) -> client:notify({message, M}).
+format(S, P) -> client:notify({format, S, P}).
 die() -> client:notify(die).
 
 %%%% GUI to Solar System

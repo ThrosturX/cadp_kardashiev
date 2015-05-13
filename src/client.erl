@@ -249,9 +249,11 @@ dialog_harvest_rsrc(State) ->
 									  "Harvest resource:",
 									  "Harvest",
 									  Resources),
-	Choice = wxDialog:showModal(Dialog),
+	wxDialog:showModal(Dialog),
+	Choice = wxSingleChoiceDialog:getStringSelection(Dialog),
 	wxDialog:destroy(Dialog),
-	format(State#state.log, "~p ~n", [Choice]).
+	format(State#state.log, "~p ~n", [Choice]),
+	Choice.
 
 %% Callbacks
 handle_info({'EXIT',_, wx_deleted}, State) ->
@@ -352,6 +354,8 @@ handle_update(State) ->
 			update_offers(State, L);
 		{message, M} ->
 			add_message(State, M);
+		{format, S, P} ->
+			format(State#state.log, S, P);
 		die ->
 			exit(ok)
 	end,
