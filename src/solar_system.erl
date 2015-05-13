@@ -31,13 +31,15 @@
 -define(MIN_BUILD_TIME, 4000).
 
 random(N) ->
-	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-	random:seed(A,B,C),
+	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
+	%random:seed(A,B,C),
+	random:seed(now()),
 	random:uniform(N).
 
 random(N,M) -> 
-	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-	random:seed(A,B,C),
+	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
+	%random:seed(A,B,C),
+	random:seed(now()),
 	N + random:uniform(M-N).
 
 sleep(T) ->
