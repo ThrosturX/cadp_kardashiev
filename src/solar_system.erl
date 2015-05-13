@@ -74,7 +74,8 @@ build(Type) ->
 			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]);
+					io:format("Building: ~w~n", [Type]),
+					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n")
 			end;
@@ -82,7 +83,8 @@ build(Type) ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]);
+					io:format("Building: ~w~n", [Type]),
+					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n")
 			end;
@@ -90,7 +92,8 @@ build(Type) ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]);
+					io:format("Building: ~w~n", [Type]),
+					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n")
 			end;
@@ -98,7 +101,8 @@ build(Type) ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]);
+					io:format("Building: ~w~n", [Type]),
+					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n")
 			end;
@@ -171,10 +175,9 @@ sendWait(Type, Msg, Node, Time) ->
 	
 %%% gen_server callbacks
 
-init([]) -> 
-	
+init([]) -> 	
 	%The state consists of 3 dictionaries: Resources, Ships and TradeRes.
-	Resources = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	Resources = dict:from_list([{'Iron', 10}, {'Food', 10}, {'Gas', 10}]),
 	Ships = dict:from_list([{'Cargo ship', 3}, {'Harvester', 3}, {'Escort', 3}]),
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	{ok, {Resources, Ships, TradeRes}}.
@@ -239,6 +242,13 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
+handle_cast({building, Type}, State) ->
+	io:format("Cast-building: ~w~n", [Type]),
+	randomSleep(4000,10000),
+	{Resources, Ships, Trade} = State,
+	NewShips = dict:update_counter(Type, 1, Ships),
+	io:format("Cast-building: ~w - Done!~n", [Type]),
+	{noreply, {Resources, NewShips, Trade}};
 %% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Type, Qty}, State) ->
 	io:format("harvest cast~n"),
