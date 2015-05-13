@@ -192,7 +192,7 @@ offer(Node, TWant, QT, THave, QH) ->
 	
 accept_offer(Node) ->
 	% First check if resources are available
-	io:format("Are resources available?"),
+	io:format("Are resources available?~n"),
 	{THave, Qty, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
 	
 	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty}),
@@ -207,7 +207,7 @@ accept_offer(Node) ->
 			if
 				ReplyFromOther == confirm ->
 					%sleep, need to spawn if so.
-					gen_server:cast(solar_system, {offer_confirmed, Node});
+					gen_server:cast(solar_system, {offer_confirmed, Node})
 				true ->
 					gen_server:cast(solar_system, {offer_cancelled, Node})
 			end
@@ -315,7 +315,7 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 	end;
 handle_call({get_offer_from, Node}, _From, State) ->
 	{_, _, _, _, Off, _} = State,
-	Offer = dict:fetch(Node, Off),
+	[Offer] = dict:fetch(Node, Off),
 	{reply, Offer, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
@@ -375,7 +375,7 @@ handle_cast({Node, outoffer, {TWant, QT, THave, QH}}, State) ->
 	{noreply, {Res, Ships, TradeRes, Req, Off, NOut}};	
 handle_cast({offer_confirmed, Node}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out} = State,
-	{THad, QH, TGot, QG} = dict:fetch(Node, Off),
+	[{THad, QH, TGot, QG}] = dict:fetch(Node, Off),
 	
 	%% Update dictionaries
 	NewOff = dict:erase(Node, Off), 
@@ -386,7 +386,7 @@ handle_cast({offer_confirmed, Node}, State) ->
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out}};
 handle_cast({offer_cancelled, Node}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out} = State,
-	{THad, QH, _, _} = dict:fetch(Node, Off),
+	[{THad, QH, _, _}] = dict:fetch(Node, Off),
 	
 	%% Update dictionaries
 	NewOff = dict:erase(Node, Off), 
