@@ -90,11 +90,11 @@ init(Options) ->
 	{ContactPanel, Contacts} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Have"}, {2, "Want"}]),
 	{OfferPanel, Offers} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
 
-	ResourceSizer = wxStaticBoxSizer:new(?wxVERTICAL, ResourcePanel, [{label, "Resources"}]),
-	ShipSizer = wxStaticBoxSizer:new(?wxVERTICAL, ShipPanel, [{label, "Ships"}]),
+	ResourceSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Resources"}]),
+	ShipSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Ships"}]),
 
-	ContactSizer = wxStaticBoxSizer:new(?wxVERTICAL, ContactPanel, [{label, "Contacts"}]),
-	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, OfferPanel, [{label, "Offers"}]),
+	ContactSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Contacts"}]),
+	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Offers"}]),
 
 	SzOpts = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND }],
 
