@@ -1,5 +1,4 @@
 -module(solar).
--behaviour(application).
 -export([start/0, stop/0]).
 
 start() ->
