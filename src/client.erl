@@ -402,7 +402,6 @@ node_d(State) ->
 	true -> Choice = none
 	end,
 	wxDialog:destroy(Dialog),
-	format(State#state.log, "~p ~n", [Choice]),
 	Choice.
 
 %% Callbacks
@@ -448,7 +447,12 @@ handle_event(#wx{id = Id,
 			arbitrator:offer(N, W, Q1, H, Q2);
 		true -> true
 		end,
-		wxWindow:destroy(W0);
+		wxWindow:destroy(W0),
+		{noreply, State};
+	?wxID_DELETE ->
+		W0 = wxWindow:findWindowById(?ID_OFFER_WIN),
+		wxWindow:destroy(W0),
+		{noreply, State};
 	_ ->
 		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
 		{noreply, State}
