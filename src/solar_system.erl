@@ -244,7 +244,8 @@ accept_offer(Node) ->
 					gen_server:cast(solar_system, {offer_cancelled, Node})
 			end
 	end.
-	
+
+%% Spawns resource planets in to solar system	
 spawner() -> 
 	io:format("Spawner~n").
 
