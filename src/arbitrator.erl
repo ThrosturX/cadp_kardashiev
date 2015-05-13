@@ -17,6 +17,9 @@ update_offers(P) -> client:notify({offers, dic_list_atom_to_string(P)}).%need to
 receive_message(M) -> client:notify({message, M}).
 
 %%%% GUI to Solar System
+%% Connect to network of nodes
+connect(Node) -> solar_system:connect(l2a(Node)).
+
 %%% Trade Section
 %% Send to all nodes request trade  
 request_trade(Want, Have) -> solar_system:trade_request(l2a(Want), l2a(Have)).
