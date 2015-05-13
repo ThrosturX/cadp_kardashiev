@@ -172,6 +172,10 @@ create_offer_ctrl(Win, Options) ->
 	wxSizer:add(Sizer, ListCtrl),
 	{ListCtrl, Sizer}.
 
+add_message(State, M) ->
+	S = M ++ "~n",
+	format(State#state.log, S, []).
+
 update_offers(State, Contacts) ->
 	ListCtrl = State#state.offers,
 	wxListCtrl:deleteAllItems(ListCtrl),
@@ -214,6 +218,22 @@ insert_resource(Ctrl, [R|T]) ->
 	wxListCtrl:setItem(Ctrl, I, 0, N),
 	wxListCtrl:setItem(Ctrl, I, 1, Q),
 	insert_resource(Ctrl, T).
+
+connect_d(State) ->
+	Frame = State#state.win,
+	Str = "Connect to:",
+	Dialog = wxTextEntryDialog:new(Frame,
+								   Str,
+								   [{style, ?wxOK bor ?wxCANCEL},
+									{caption, "Connect to node"},
+									{value, "node@hostname"}]),
+	Ret = wxDialog:showModal(Dialog),
+	wxDialog:destroy(Dialog),
+	if Ret == ?wxID_OK ->
+		arbitrator:connect(wxTextEntryDialog:getValue(Dialog));
+	true -> true
+	end,
+	format(State#state.log, "~p, ~p ~n", [Ret, ?wxID_OK]).
 
 %% Callbacks
 handle_info({'EXIT',_, wx_deleted}, State) ->
@@ -261,7 +281,8 @@ handle_event(#wx{id = Id,
 	?wxID_EXIT ->
 		{stop, normal, State};
 	?ID_CONNECT ->
-		format(State#state.log, "Unimplemented CONNECT event: #~p ~n", [Id]),
+		connect_d(State),
+		format(State#state.log, "CONNECT event: #~p ~n", [Id]),
 		{noreply, State};
 	_ ->
 		format(State#state.log, "Unhandled event: #~p ~n", [Id]),
@@ -295,6 +316,8 @@ handle_update(State) ->
 			update_ships(State, L);
 		{offers, L} ->
 			update_offers(State, L);
+		{message, M} ->
+			add_message(State, M);
 		die ->
 			exit(ok)
 	end,
