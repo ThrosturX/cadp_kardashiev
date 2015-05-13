@@ -14,7 +14,8 @@
 	harvest/1,
 	build/1,
 	resource_types/0,
-	ship_types/0]).
+	ship_types/0,
+	send_private_message/2]).
 
 update_contacts(D) ->
 	Keys = dict:fetch_keys(D),
@@ -47,7 +48,7 @@ connect(Node) -> solar_system:connect(l2a(Node)).
 %% Sets your node name
 set_node_name(Node) -> 	solar_system:set_node_name(l2a(Node)).
 %% Send the message Msg to Node 
-send_private_message(Node, Msg) -> send(msg, Msg, Node).
+send_private_message(Node, Msg) -> solar_system:send(msg, Msg, Node).
 
 %%% Trade Section
 %% Send to all nodes request trade  
