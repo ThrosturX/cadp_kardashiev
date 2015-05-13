@@ -19,20 +19,23 @@ receive_message(M) -> client:notify({message, M}).
 %%%% GUI to Solar System
 %%% Trade Section
 %% Send to all nodes request trade  
-request_trade(Want, Have) -> solar_system:trade_request(Want, Have).
+request_trade(Want, Have) -> solar_system:trade_request(l2a(Want), l2a(Have)).
 %% Send to all nodes cancel trade 
-cancel_trade(Want, Have) -> solar_system:cancel_request(Want, Have).
+cancel_trade(Want, Have) -> solar_system:cancel_request(l2a(Want), l2a(Have)).
 %% Spawns offer process that handle offer
-offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(Node, Want, WQ, Have, HQ).
+offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), l2i(WQ), l2a(Have), l2i(HQ)).
 
 %%% Inside Solar System 
 %% Start harvesting mission of type Type
-harvest(Type) -> solar_system:harvest(Type).
+harvest(Type) -> solar_system:harvest(l2a(Type)).
 %% build ship of type Type
-build(Type) -> solar_system:build(list_to_atom(Type)).
+build(Type) -> solar_system:build(l2a(Type)).
  
 
 %%%% Helper functions
+l2a(N) -> list_to_atom(N).
+l2i(N) -> list_to_integer(N).
+
 dic_list_atom_to_string(L) ->
 	dic_list_atom_to_string(L,[]).
 
