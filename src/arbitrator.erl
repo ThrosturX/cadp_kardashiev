@@ -14,7 +14,8 @@
 	harvest/1,
 	build/1,
 	resource_types/0,
-	ship_types/0]).
+	ship_types/0,
+	send_private_message/2]).
 
 update_contacts(D) ->
 	Keys = dict:fetch_keys(D),
@@ -44,9 +45,10 @@ die() -> client:notify(die).
 %%%% GUI to Solar System
 %% Connect to network of nodes
 connect(Node) -> solar_system:connect(l2a(Node)).
-set_node_name(Node) -> 
-	%io:format("Arbitrator set_node_name: ~p~n", [Node]),
-	solar_system:set_node_name(l2a(Node)).
+%% Sets your node name
+set_node_name(Node) -> 	solar_system:set_node_name(l2a(Node)).
+%% Send the message Msg to Node 
+send_private_message(Node, Msg) -> solar_system:send(msg, Msg, Node).
 
 %%% Trade Section
 %% Send to all nodes request trade  
@@ -54,7 +56,7 @@ request_trade(Want, Have) -> solar_system:trade_request(l2a(Want), l2a(Have)).
 %% Send to all nodes cancel trade 
 cancel_trade(Want, Have) -> solar_system:cancel_request(l2a(Want), l2a(Have)).
 %% Spawns offer process that handle offer
-offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), l2i(WQ), l2a(Have), l2i(HQ)).
+offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), WQ, l2a(Have), HQ).
 
 %%% Inside Solar System 
 %% Start harvesting mission of type Type
