@@ -33,9 +33,9 @@ dic_list_atom_to_string(L) ->
 dic_list_atom_to_string([],R) -> R;
 dic_list_atom_to_string([H|L],[]) ->
 	{A, B} = H,
-	H2 = {atom_to_list(A), B},
+	H2 = {atom_to_list(A), integer_to_list(B)},
 	dic_list_atom_to_string(L, [H2]);	
 dic_list_atom_to_string([H|L],R) ->
 	{A, B} = H,
-	H2 = {atom_to_list(A), B},
+	H2 = {atom_to_list(A), integer_to_list(B)},
 	dic_list_atom_to_string(L, R ++ [H2] ).

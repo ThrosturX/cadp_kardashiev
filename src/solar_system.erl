@@ -12,7 +12,8 @@
 		display_nodes/0,
 		send/3,
 		trade_request/2,
-		offer/5]).
+		offer/5,
+		build/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -22,6 +23,8 @@
 -define(MAX_HARVEST, 10).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
+-define(MAX_BUILD_TIME, 10000).
+-define(MIN_BUILD_TIME, 4000).
 
 random(N) ->
 	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
@@ -48,10 +51,9 @@ list_resources(State) ->
 	{Res, _, _} = State,
 	dict:to_list(Res).
 
-% returns the ships formatted for the arbitrator
-%list_resources(State) ->
-%	{_, Ships, _} = State,
-%	[{"Cargo ship", fetch(cargo_ship, Ships)}, {"Harvester", fetch(harvester, Ships)}, {"Escort", fetch(escort, Ships)}].
+list_ships(State) -> 
+	{_, Ships, _} = State,
+	dict:to_list(Ships).
 	
 start_link() ->
 	register(home, spawn(solar_system, home_planet, [])),
@@ -67,8 +69,51 @@ home_planet() ->
 print_resources() ->
 	gen_server:call(solar_system, resources).
 
+%% Build function checks the Type of ship and 
+%% if there are enough resources to build the ship 
 build(Type) ->
-	io:format("Build: ~w~n", [Type]).
+	io:format("Build: ~w~n", [Type]),
+	if
+		Type == 'Death Ray' ->
+			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
+			if
+				Reply == build_ok ->
+					io:format("Building: ~w~n", [Type]),
+					gen_server:cast(solar_system, {building, Type});
+				true ->
+					io:format("Not enough resources~n")
+			end;
+		Type == 'Harvester' ->
+			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
+			if
+				Reply == build_ok ->
+					io:format("Building: ~w~n", [Type]),
+					gen_server:cast(solar_system, {building, Type});
+				true ->
+					io:format("Not enough resources~n")
+			end;
+		Type == 'Cargo Ship' ->
+			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
+			if
+				Reply == build_ok ->
+					io:format("Building: ~w~n", [Type]),
+					gen_server:cast(solar_system, {building, Type});
+				true ->
+					io:format("Not enough resources~n")
+			end;
+		Type == 'Escort' ->
+			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
+			if
+				Reply == build_ok ->
+					io:format("Building: ~w~n", [Type]),
+					gen_server:cast(solar_system, {building, Type});
+				true ->
+					io:format("Not enough resources~n")
+			end;
+		true ->
+			io:format("Unkown Type: ~w~n", [Type]),
+			false
+	end.
 
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
@@ -134,14 +179,30 @@ sendWait(Type, Msg, Node, Time) ->
 	
 %%% gen_server callbacks
 
-init([]) -> 
-	
+init([]) -> 	
 	%The state consists of 3 dictionaries: Resources, Ships and TradeRes.
-	Resources = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	Resources = dict:from_list([{'Iron', 10}, {'Food', 10}, {'Gas', 10}]),
 	Ships = dict:from_list([{'Cargo ship', 3}, {'Harvester', 3}, {'Escort', 3}]),
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	{ok, {Resources, Ships, TradeRes}}.
-	
+
+%% checks if there are enough resources if so detract from resources
+%% and reply with ok to build else reply with don't build
+handle_call({build, Iron, Food, Gas}, _From, State) ->
+	{Res, Ships, Trade} = State,
+	I = dict:fetch('Iron', Res),
+	F = dict:fetch('Food', Res),
+	G = dict:fetch('Gas', Res),
+	if 
+		I >= Iron andalso F >= Food andalso G >= Gas ->
+			TempRes1 = dict:update_counter('Iron', -Iron, Res),
+			TempRes2 = dict:update_counter('Food', -Food, TempRes1),
+			NewRes = dict:update_counter('Gas', -Gas, TempRes2),
+			arbitrator:update_resources(dict:to_list(NewRes)),
+			{reply, build_ok, {NewRes, Ships, Trade}};	
+		true ->
+			{reply, build_nores, State}
+	end;	
 %% prints the resources and ships available
 handle_call(resources, _From, State) ->
 	{Resources, Ships, TradeRes} = State,
@@ -159,6 +220,7 @@ handle_call(start_harvest, _From, State) ->
 			{reply, noship, State};
 		true -> 
 			NewShips = dict:update_counter('Harvester', -1, Ships),
+			arbitrator:update_ships(dict:to_list(NewShips)),
 			{reply, ship, {Res, NewShips, Trade}}
 	end;
 %% checks if the resources and ships needed for the given trade is available
@@ -176,6 +238,8 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 					NewRes = dict:update_counter(Type, -Qty, Res),
 					NewShips = dict:update_counter('Cargo ship', -1, Ships),
 					NewTrade = dict:update_counter(Type, Qty, Trade),
+					arbitrator:update_resources(dict:to_list(NewRes)),
+					arbitrator:update_ships(dict:to_list(NewShips)),
 					{reply, ok, {NewRes, NewShips, NewTrade}};
 				true -> 
 					{reply, nores, State}
@@ -184,12 +248,24 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
+
+%% Builds ship of type Type and adds it to Ships, takes random time
+handle_cast({building, Type}, State) ->
+	io:format("Cast-building: ~w~n", [Type]),
+	randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
+	{Resources, Ships, Trade} = State,
+	NewShips = dict:update_counter(Type, 1, Ships),
+	arbitrator:update_ships(dict:to_list(NewShips)),
+	io:format("Cast-building: ~w - Done!~n", [Type]),
+	{noreply, {Resources, NewShips, Trade}};
 %% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Type, Qty}, State) ->
 	io:format("harvest cast~n"),
 	{Resources, Ships, Trade} = State,
 	NewShips = dict:update_counter('Harvester', 1, Ships),
 	NewRes = dict:update_counter(Type, Qty, Resources),
+	arbitrator:update_ships(dict:to_list(NewShips)),
+	arbitrator:update_resources(dict:to_list(NewRes)),
 	io:format("~w: ~w~n", [Type, Qty]),
 	{noreply, {NewRes, NewShips, Trade}};	
 %% receives a message from another player

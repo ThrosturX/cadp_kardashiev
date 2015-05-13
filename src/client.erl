@@ -180,6 +180,7 @@ update_offers(State, Contacts) ->
 
 update_ships(State, Ships) ->
 	ListCtrl = State#state.ships,
+	io:format("State is: ~p~n", [ListCtrl]),
 	wxListCtrl:deleteAllItems(ListCtrl),
 	insert_resource(ListCtrl, Ships), % not a typo!! code re-use
 	ListCtrl.
