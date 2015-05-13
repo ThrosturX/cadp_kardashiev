@@ -55,7 +55,7 @@ request_trade(Want, Have) -> solar_system:trade_request(l2a(Want), l2a(Have)).
 %% Send to all nodes cancel trade 
 cancel_trade(Want, Have) -> solar_system:cancel_request(l2a(Want), l2a(Have)).
 %% Spawns offer process that handle offer
-offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), l2i(WQ), l2a(Have), l2i(HQ)).
+offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), WQ, l2a(Have), HQ).
 
 %%% Inside Solar System 
 %% Start harvesting mission of type Type
