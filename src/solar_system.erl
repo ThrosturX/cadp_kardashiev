@@ -4,7 +4,7 @@
 -export([start_link/0,
 		home_planet/0,
 		spawner/0,
-		print_resources/0,
+		print/0,
 		harvest/1,
 		harvesting/1,
 		stop/0,
@@ -69,7 +69,7 @@ stop() ->
 home_planet() -> 
 	io:format("Home planet~n").
 
-print_resources() ->
+print() ->
 	gen_server:call(solar_system, resources).
 
 resource_types() ->
@@ -230,11 +230,12 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 	end;	
 %% prints the resources and ships available
 handle_call(resources, _From, State) ->
-	{Resources, Ships, TradeRes, Req, _} = State,
+	{Resources, Ships, TradeRes, Req, Off} = State,
 	io:format("Resources: ~p~n", [dict:to_list(Resources)]),
 	io:format("Ships: ~p~n", [dict:to_list(Ships)]),
 	io:format("TradeRes: ~p~n", [dict:to_list(TradeRes)]),
 	io:format("Trade requests: ~p~n", [dict:to_list(Req)]),
+	io:format("Trade offers: ~p~n", [dict:to_list(Off)]),
 	{reply, [], State};
 %% starts a harvest and reserves a harvester if one is available. If not it ends the operation
 handle_call(start_harvest, _From, State) ->			
@@ -318,7 +319,11 @@ handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
 	%TODO: Update offer list in GUI.
-	{noreply, State};
+	{Res, Ships, TradeRes, Req, Off} = State,
+	Fun = fun(_) -> {TWant, QT, THave, QH} end,
+	NOff = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Off),
+	arbitrator:update_offers(NOff),
+	{noreply, {Res, Ships, TradeRes, Req, NOff}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.

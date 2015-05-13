@@ -19,10 +19,21 @@ update_contacts(D) ->
 	Keys = dict:fetch_keys(D),
 	Result = requests_to_list(Keys, D),
 	client:notify({contacts, Result}).
+
+update_offers(P) ->
+	Result = offers_to_list(dict:to_list(P)),
+	io:format("OFFER LIST: ~p~n", [Result]),
+	client:notify({offers, Result}).
+offers_to_list([]) -> [];
+offers_to_list([H|T]) ->
+	io:format("H is: ~p~n", [H]),
+	{Node, [L]} = H,
+	{A, B, C, D} = L,
+	[{a2l(Node), a2l(A), integer_to_list(B), a2l(C), integer_to_list(D)}] ++ offers_to_list(T).
 	
 update_resources(P) -> client:notify({resources, dic_list_atom_to_string(P)}).
 update_ships(P) -> client:notify({ships, dic_list_atom_to_string(P)}).
-update_offers(P) -> client:notify({offers, dic_list_atom_to_string(P)}).%need to change
+%update_offers(P) -> client:notify({offers, dic_list_atom_to_string(P)}).%need to change
 receive_message(M) -> client:notify({message, M}).
 format(S, P) -> client:notify({format, S, P}).
 die() -> client:notify(die).
@@ -75,3 +86,4 @@ key_to_list(_, []) -> [];
 key_to_list(Key, [H|T]) ->
 	{Want, Have} = H,
 	[{a2l(Key), a2l(Want), a2l(Have)}] ++ key_to_list(Key, T).
+	 
