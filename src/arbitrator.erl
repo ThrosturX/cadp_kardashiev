@@ -4,6 +4,7 @@
 	update_ships/1, 
 	update_offers/1, 
 	receive_message/1, 
+	die/0, 
 	connect/1, 
 	request_trade/2, 
 	cancel_trade/2, 
@@ -38,7 +39,7 @@ harvest(Type) -> solar_system:harvest(l2a(Type)).
 %% build ship of type Type
 build(Type) -> solar_system:build(l2a(Type)).
 %% Returns resource types
-resource_types() -> solar_system:resource_type().
+resource_types() -> solar_system:resource_types().
 %% Returns ship types
 ship_types() -> solar_system:ship_types(). 
 
