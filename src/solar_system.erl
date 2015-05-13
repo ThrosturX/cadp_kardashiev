@@ -431,7 +431,7 @@ handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 handle_cast({cOutOffer, Node}, State) ->
 	io:format("Cancel our own offer ~n"),
 	{Res, Ships, TradeRes, Req, Off, Out} = State,
-	{_, _, THave, Qt} = dict:fetch(Node, Out),
+	[{_, _, THave, Qt}] = dict:fetch(Node, Out),
 	NShips = dict:update_counter('Cargo ship', 1, Ships),
 	NOut = dict:erase(Node, Off),
 	NRes = dict:update_counter(THave, Qt, Res),
