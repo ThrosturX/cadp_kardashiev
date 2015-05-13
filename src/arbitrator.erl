@@ -10,8 +10,22 @@
 	harvest/1,
 	build/1]).
 
+update_contacts(D) ->
+	Keys = dict:fetch_keys(D),
+	Result = requests_to_list(Keys, D),
+	
+	client:notify({contacts, Result}).
+	
+requests_to_list([], _) -> [];
+requests_to_list([H|T], D) ->
+	key_to_list(H, dict:fetch(H, D)) ++ requests_to_list(T, D).
+	
+key_to_list(_, []) -> [];
+key_to_list(Key, [H|T]) ->
+	{Want, Have} = H,
+	[{a2l(Key), a2l(Want), a2l(Have)}] ++ key_to_list(Key, T).
+	
 update_resources(P) -> client:notify({resources, dic_list_atom_to_string(P)}).
-update_contacts(P) -> client:notify({contacts, dic_list_atom_to_string(P)}).
 update_ships(P) -> client:notify({ships, dic_list_atom_to_string(P)}).
 update_offers(P) -> client:notify({offers, dic_list_atom_to_string(P)}).%need to change
 receive_message(M) -> client:notify({message, M}).
@@ -39,6 +53,7 @@ build(Type) -> solar_system:build(l2a(Type)).
 %%%% Helper functions
 l2a(N) -> list_to_atom(N).
 l2i(N) -> list_to_integer(N).
+a2l(N) -> atom_to_list(N).
 
 dic_list_atom_to_string(L) ->
 	dic_list_atom_to_string(L,[]).

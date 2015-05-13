@@ -287,7 +287,7 @@ handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	{Res, Ships, TradeRes, Req, Off} = State,
 	Fun = fun(Old) -> Old ++ [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),	
-	
+	arbitrator:update_contacts(NReq),
 	{noreply, {Res, Ships, TradeRes, NReq, Off}};
 %% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
