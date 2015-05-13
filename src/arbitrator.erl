@@ -15,6 +15,7 @@ update_contacts(P) -> client:notify({contacts, dic_list_atom_to_string(P)}).
 update_ships(P) -> client:notify({ships, dic_list_atom_to_string(P)}).
 update_offers(P) -> client:notify({offers, dic_list_atom_to_string(P)}).%need to change
 receive_message(M) -> client:notify({message, M}).
+die() -> client:notify(die).
 
 %%%% GUI to Solar System
 %% Connect to network of nodes

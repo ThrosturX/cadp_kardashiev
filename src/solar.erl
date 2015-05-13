@@ -7,4 +7,4 @@ start() ->
 
 stop() ->
 	solar_system:stop(),
-	arbitrator:kill().
+	arbitrator:die().
