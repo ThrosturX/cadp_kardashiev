@@ -13,7 +13,9 @@
 		send/3,
 		trade_request/2,
 		offer/5,
-		build/1]).
+		build/1, 
+		ship_types/0, 
+		resource_types/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -68,6 +70,12 @@ home_planet() ->
 
 print_resources() ->
 	gen_server:call(solar_system, resources).
+
+resource_types() ->
+	['Iron', 'Food', 'Gas'].
+
+ship_types() ->
+	['Escort', 'Harvester', 'Cargo ship'].
 
 %% Build function checks the Type of ship and 
 %% if there are enough resources to build the ship 

@@ -9,7 +9,9 @@
 	cancel_trade/2, 
 	offer/5, 
 	harvest/1,
-	build/1]).
+	build/1,
+	resource_types/0,
+	ship_types/0]).
 
 update_resources(P) -> client:notify({resources, dic_list_atom_to_string(P)}).
 update_contacts(P) -> client:notify({contacts, dic_list_atom_to_string(P)}).
@@ -35,7 +37,10 @@ offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), l2i(
 harvest(Type) -> solar_system:harvest(l2a(Type)).
 %% build ship of type Type
 build(Type) -> solar_system:build(l2a(Type)).
- 
+%% Returns resource types
+resource_types() -> solar_system:resource_type().
+%% Returns ship types
+ship_types() -> solar_system:ship_types(). 
 
 %%%% Helper functions
 l2a(N) -> list_to_atom(N).
