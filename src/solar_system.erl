@@ -2,7 +2,6 @@
 -behavior(gen_server).
 	
 -export([start_link/0,
-		home_planet/0,
 		spawner/0,
 		print/0,
 		harvest/1,
@@ -84,7 +83,6 @@ list_ships(State) ->
 	dict:to_list(Ships).
 	
 start_link() ->
-	register(home, spawn(solar_system, home_planet, [])),
 	spawn(solar_system, spawner, []),
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
@@ -96,9 +94,6 @@ set_node_name(Name) ->
 	net_kernel:start([Name, longnames]),
 	erlang:set_cookie(node(), kaka). 
 	
-home_planet() -> 
-	io:format("Home planet~n").
-
 print() ->
 	gen_server:call(solar_system, resources).
 
