@@ -78,8 +78,29 @@ build(Type) ->
 					io:format("Not enough resources").
 			end
 		Type == 'Harvester' ->
+			Reply = gen_server:call(solar_system, {build, 10, 10, 10});
+			if
+				Reply == build_ok ->
+					io:format("Building: ~w~n", [Type]).
+				true ->
+					io:format("Not enough resources").
+			end
 		Type == 'Cargo Ship' ->
+			Reply = gen_server:call(solar_system, {build, 30, 30, 30});
+			if
+				Reply == build_ok ->
+					io:format("Building: ~w~n", [Type]).
+				true ->
+					io:format("Not enough resources").
+			end
 		Type == 'Escort' ->
+			Reply = gen_server:call(solar_system, {build, 60, 60, 60});
+			if
+				Reply == build_ok ->
+					io:format("Building: ~w~n", [Type]).
+				true ->
+					io:format("Not enough resources").
+			end
 		true ->
 			io:format("Unkown Type: ~w", [Type]),
 			false
