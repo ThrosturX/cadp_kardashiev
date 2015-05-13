@@ -23,6 +23,8 @@
 -define(MAX_HARVEST, 10).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
+-define(MAX_BUILD_TIME, 10000).
+-define(MIN_BUILD_TIME, 4000).
 
 random(N) ->
 	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
@@ -192,7 +194,8 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 		I >= Iron andalso F >= Food andalso G >= Gas ->
 			TempRes1 = dict:update_counter('Iron', -Iron, Res),
 			TempRes2 = dict:update_counter('Food', -Food, TempRes1),
-			NewRes = dict:update_counter('Gas', -Gas, TempRes2),	
+			NewRes = dict:update_counter('Gas', -Gas, TempRes2),
+			arbitrator:update_resources(dict:to_list(NewRes)),
 			{reply, build_ok, {NewRes, Ships, Trade}};	
 		true ->
 			{reply, build_nores, State}
@@ -244,9 +247,10 @@ handle_call(_Msg, _From, State) ->
 
 handle_cast({building, Type}, State) ->
 	io:format("Cast-building: ~w~n", [Type]),
-	randomSleep(4000,10000),
+	randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
 	{Resources, Ships, Trade} = State,
 	NewShips = dict:update_counter(Type, 1, Ships),
+	arbitrator:update_ships(dict:to_list(NewShips)),
 	io:format("Cast-building: ~w - Done!~n", [Type]),
 	{noreply, {Resources, NewShips, Trade}};
 %% ends the harvest and increases our current resources accordingly
