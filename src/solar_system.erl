@@ -80,15 +80,16 @@ ship_types() ->
 %% Build function checks the Type of ship and 
 %% if there are enough resources to build the ship 
 build(Type) ->
-	io:format("Build: ~w~n", [Type]),
-	arbitrator:format("Build: ~w", [Type]),
+	SType = atom_to_list(Type),
+	io:format("Build: ~w~n", [SType]),
+	arbitrator:format("Build: ~w", [SType]),
 	if
 		Type == 'Death Ray' ->
 			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]),
-					arbitrator:format("Building: ~w", [Type]),
+					io:format("Building: ~w~n", [SType]),
+					arbitrator:format("Building: ~w", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
@@ -98,8 +99,8 @@ build(Type) ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]),
-					arbitrator:format("Building: ~w", [Type]),
+					io:format("Building: ~w~n", [SType]),
+					arbitrator:format("Building: ~w", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
@@ -109,8 +110,8 @@ build(Type) ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]),
-					arbitrator:format("Building: ~w", [Type]),
+					io:format("Building: ~w~n", [SType]),
+					arbitrator:format("Building: ~w", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
@@ -120,16 +121,16 @@ build(Type) ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]),
-					arbitrator:format("Building: ~w", [Type]),
+					io:format("Building: ~w~n", [SType]),
+					arbitrator:format("Building: ~w", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
 					arbitrator:format("Not enough resources")
 			end;
 		true ->
-			io:format("Unkown Type: ~w~n", [Type]),
-			arbitrator:format("Unkown Type: ~w", [Type]),
+			io:format("Unkown Type: ~w~n", [SType]),
+			arbitrator:format("Unkown Type: ~w", [SType]),
 			false
 	end.
 
