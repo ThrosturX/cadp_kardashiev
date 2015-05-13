@@ -210,10 +210,11 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 	end;	
 %% prints the resources and ships available
 handle_call(resources, _From, State) ->
-	{Resources, Ships, TradeRes, _, _} = State,
+	{Resources, Ships, TradeRes, Req, _} = State,
 	io:format("Resources: ~p~n", [dict:to_list(Resources)]),
 	io:format("Ships: ~p~n", [dict:to_list(Ships)]),
 	io:format("TradeRes: ~p~n", [dict:to_list(TradeRes)]),
+	io:format("Trade requests: ~p~n", [dict:to_list(Req)]),
 	{reply, [], State};
 %% starts a harvest and reserves a harvester if one is available. If not it ends the operation
 handle_call(start_harvest, _From, State) ->			
@@ -281,8 +282,13 @@ handle_cast({Node, msg, Msg}, State) ->
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
+	
 	%TODO: Add request to list of trade requests in GUI
-	{noreply, State};
+	{Res, Ships, TradeRes, Req, Off} = State,
+	Fun = fun(Old) -> Old ++ [{TWant, THave}] end,
+	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),	
+	
+	{noreply, {Res, Ships, TradeRes, NReq, Off}};
 %% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
