@@ -2,7 +2,7 @@
 -export([start/0, stop/0]).
 
 start() ->
-	erlang:set_cookie(node(), kaka),
+	set_cookie(node(), kaka),
 	client:start(),
 	solar_system:start_link().
 
