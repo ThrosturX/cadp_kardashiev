@@ -46,11 +46,11 @@ randomSleep(N,M) ->
 
 % returns the resources formatted for the arbitrator
 list_resources(State) ->
-	{Res, _, _} = State,
+	{Res, _, _, _, _} = State,
 	dict:to_list(Res).
 
 list_ships(State) -> 
-	{_, Ships, _} = State,
+	{_, Ships, _, _, _} = State,
 	dict:to_list(Ships).
 	
 start_link() ->
@@ -88,7 +88,7 @@ build(Type) ->
 				true ->
 					io:format("Not enough resources~n")
 			end;
-		Type == 'Cargo Ship' ->
+		Type == 'Cargo ship' ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
@@ -180,11 +180,15 @@ init([]) ->
 	Resources = dict:from_list([{'Iron', 10}, {'Food', 10}, {'Gas', 10}]),
 	Ships = dict:from_list([{'Cargo ship', 3}, {'Harvester', 3}, {'Escort', 3}]),
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
-	{ok, {Resources, Ships, TradeRes}}.
+	Requests = dict:from_list([]),
+	Offers = dict:from_list([]),
+	arbitrator:update_ships(dict:to_list(Ships)),
+	arbitrator:update_resources(dict:to_list(Resources)),
+	{ok, {Resources, Ships, TradeRes, Requests, Offers}}.
 
 %% S
 handle_call({build, Iron, Food, Gas}, _From, State) ->
-	{Res, Ships, Trade} = State,
+	{Res, Ships, Trade, Req, Off} = State,
 	I = dict:fetch('Iron', Res),
 	F = dict:fetch('Food', Res),
 	G = dict:fetch('Gas', Res),
@@ -193,13 +197,13 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 			TempRes1 = dict:update_counter('Iron', -Iron, Res),
 			TempRes2 = dict:update_counter('Food', -Food, TempRes1),
 			NewRes = dict:update_counter('Gas', -Gas, TempRes2),	
-			{reply, build_ok, {NewRes, Ships, Trade}};	
+			{reply, build_ok, {NewRes, Ships, Trade, Req, Off}};	
 		true ->
 			{reply, build_nores, State}
 	end;	
 %% prints the resources and ships available
 handle_call(resources, _From, State) ->
-	{Resources, Ships, TradeRes} = State,
+	{Resources, Ships, TradeRes, _, _} = State,
 	io:format("Resources: ~p~n", [dict:to_list(Resources)]),
 	io:format("Ships: ~p~n", [dict:to_list(Ships)]),
 	io:format("TradeRes: ~p~n", [dict:to_list(TradeRes)]),
@@ -207,7 +211,7 @@ handle_call(resources, _From, State) ->
 %% starts a harvest and reserves a harvester if one is available. If not it ends the operation
 handle_call(start_harvest, _From, State) ->			
 	io:format("check if enough ships~n"),
-	{Res, Ships, Trade} = State,
+	{Res, Ships, Trade, Req, Off} = State,
 	H = dict:fetch('Harvester', Ships),
 	if 
 		H == 0 -> 
@@ -215,12 +219,12 @@ handle_call(start_harvest, _From, State) ->
 		true -> 
 			NewShips = dict:update_counter('Harvester', -1, Ships),
 			arbitrator:update_ships(dict:to_list(NewShips)),
-			{reply, ship, {Res, NewShips, Trade}}
+			{reply, ship, {Res, NewShips, Trade, Req, Off}}
 	end;
 %% checks if the resources and ships needed for the given trade is available
 handle_call({reserve_resource, Type, Qty}, _From, State) ->
 	io:format("Check if enough resources~n"),
-	{Res, Ships, Trade} = State,
+	{Res, Ships, Trade, Req, Off} = State,
 	C = dict:fetch('Cargo ship', Ships),
 	if 
 		C == 0 -> 
@@ -234,7 +238,7 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 					NewTrade = dict:update_counter(Type, Qty, Trade),
 					arbitrator:update_resources(dict:to_list(NewRes)),
 					arbitrator:update_ships(dict:to_list(NewShips)),
-					{reply, ok, {NewRes, NewShips, NewTrade}};
+					{reply, ok, {NewRes, NewShips, NewTrade, Req, Off}};
 				true -> 
 					{reply, nores, State}
 			end
@@ -245,20 +249,21 @@ handle_call(_Msg, _From, State) ->
 handle_cast({building, Type}, State) ->
 	io:format("Cast-building: ~w~n", [Type]),
 	randomSleep(4000,10000),
-	{Resources, Ships, Trade} = State,
+	{Resources, Ships, Trade, Req, Off} = State,
 	NewShips = dict:update_counter(Type, 1, Ships),
 	io:format("Cast-building: ~w - Done!~n", [Type]),
-	{noreply, {Resources, NewShips, Trade}};
+	{noreply, {Resources, NewShips, Trade, Req, Off}};
 %% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Type, Qty}, State) ->
 	io:format("harvest cast~n"),
-	{Resources, Ships, Trade} = State,
+	%io:format("State is: ~p~n", [State]),
+	{Resources, Ships, Trade, Req, Off} = State,
 	NewShips = dict:update_counter('Harvester', 1, Ships),
 	NewRes = dict:update_counter(Type, Qty, Resources),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	arbitrator:update_resources(dict:to_list(NewRes)),
 	io:format("~w: ~w~n", [Type, Qty]),
-	{noreply, {NewRes, NewShips, Trade}};	
+	{noreply, {NewRes, NewShips, Trade, Req, Off}};	
 %% receives a message from another player
 handle_cast({Node, msg, Msg}, State) ->
 	io:format("Message from ~w: ~w~n", [Node, Msg]),
