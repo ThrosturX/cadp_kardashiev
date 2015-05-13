@@ -119,6 +119,8 @@ init(Options) ->
 
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
 	wxSplitterWindow:splitHorizontally(TopSplitter, UpperSplitter, EvPanel, [{sashPosition, 600}]),
+
+	wxSplitterWindow:setSizer(UpperSplitter, Sizer),
 	
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
 	Watcher = whereis(refresher),
@@ -139,6 +141,78 @@ init(Options) ->
 	{Frame, State}.
 
 %% Helpers
+
+-define(ID_OFFER_WIN, 200).
+-define(ID_OFFER_R, 201).
+-define(ID_OFFER_O, 202).
+-define(ID_OFFER_RQ, 203).
+-define(ID_OFFER_OQ, 204).
+
+make_offer(State) ->
+	Frame = wxFrame:new(State#state.win, ?ID_OFFER_WIN, "Make Trade Offer",
+						[{style,
+							?wxCAPTION bor
+							?wxCLOSE_BOX bor
+							?wxSTAY_ON_TOP
+						}]),
+
+	Avail = ["MOCK", "CHOICES", "LOL"],
+	Owned = ["SOCK", "CHOICES", "FOO"],
+
+	Panel = wxPanel:new(Frame, []),
+	SuperSizer = wxBoxSizer:new(?wxVERTICAL),
+	MainSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	RequestSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Panel,
+										[{label, "Request"}]),
+	OfferSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Panel,
+										[{label, "Offer"}]),
+
+	ReqSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel),
+	OffSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel),
+
+	ReqPanel1 = wxPanel:new(Panel, []),
+	OffPanel1 = wxPanel:new(Panel, []),
+	ReqPanel2 = wxPanel:new(Panel, []),
+	OffPanel2 = wxPanel:new(Panel, []),
+
+	Request = wxChoice:new(ReqPanel1, ?ID_OFFER_R, [{choices, Avail}]),
+	Offer = wxChoice:new(OffPanel1, ?ID_OFFER_O, [{choices, Owned}]),
+
+	RQ = wxSpinCtrl:new(ReqPanel2, [{id, ?ID_OFFER_RQ}]),
+	OQ = wxSpinCtrl:new(OffPanel2, [{id, ?ID_OFFER_OQ}]),
+
+	wxSpinCtrl:setRange(RQ, 1, 10),
+	wxSpinCtrl:setRange(OQ, 1, 10),
+
+	CancelPanel = wxPanel:new(Panel, []),
+	ConfirmPanel = wxPanel:new(Panel, []),
+	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+
+	Cancel = wxButton:new(CancelPanel, ?wxID_DELETE, [{label, "Cancel"}]),
+	Confirm = wxButton:new(ConfirmPanel, ?wxID_APPLY, [{label, "Confirm"}]),
+
+	wxWindow:connect(Panel, command_button_clicked),
+
+	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
+	wxSizer:add(ButtonSizer, CancelPanel, Options),
+	wxSizer:add(ButtonSizer, ConfirmPanel, Options),
+
+	wxSizer:add(ReqSizer, ReqPanel1, Options),
+	wxSizer:add(ReqSizer, ReqPanel2, Options),
+	wxSizer:add(OffSizer, OffPanel1, Options),
+	wxSizer:add(OffSizer, OffPanel2, Options),
+
+	wxSizer:add(RequestSizer, ReqSizer, Options),
+	wxSizer:add(OfferSizer, OffSizer, Options),
+	wxSizer:add(MainSizer, RequestSizer, Options),
+	wxSizer:add(MainSizer, OfferSizer, Options),
+	wxSizer:add(SuperSizer, MainSizer, Options),
+	wxSizer:add(SuperSizer, ButtonSizer, Options),
+
+	wxPanel:setSizer(Panel, SuperSizer),
+	wxFrame:center(Frame),
+	wxFrame:show(Frame).
+
 create_subwindow(Parent, BoxLabel, Funs) ->
 	Panel = wxPanel:new(Parent),
 	Sz	  = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, BoxLabel}]),
@@ -307,8 +381,26 @@ dialog_harvest_rsrc(State) ->
 									  "Harvest resource:",
 									  "Harvest",
 									  Resources),
-	wxDialog:showModal(Dialog),
-	Choice = wxSingleChoiceDialog:getStringSelection(Dialog),
+	Ret = wxDialog:showModal(Dialog),
+	if Ret == ?wxID_OK ->
+		Choice = wxSingleChoiceDialog:getStringSelection(Dialog);
+	true -> Choice = none
+	end,
+	wxDialog:destroy(Dialog),
+	format(State#state.log, "~p ~n", [Choice]),
+	Choice.
+
+node_d(State) -> 
+	Frame = State#state.win,
+	Dialog = wxSingleChoiceDialog:new(Frame,
+									  "Make offer:",
+									  "Offer",
+									  nodes()),
+	Ret = wxDialog:showModal(Dialog),
+	if Ret == ?wxID_OK ->
+		Choice = wxSingleChoiceDialog:getStringSelection(Dialog);
+	true -> Choice = none
+	end,
 	wxDialog:destroy(Dialog),
 	format(State#state.log, "~p ~n", [Choice]),
 	Choice.
@@ -333,6 +425,34 @@ handle_cast(Msg, State) ->
 	{noreply,State}.
 
 %% Async Events are handled in handle_event as in handle_info
+handle_event(#wx{id = Id,
+		event = #wxCommand{type = command_button_clicked}},
+		State = #state{}) ->
+	case Id of
+	?wxID_APPLY ->
+		W0 = wxWindow:findWindowById(?ID_OFFER_WIN),
+		RR = wxWindow:findWindowById(?ID_OFFER_R),
+		OR = wxWindow:findWindowById(?ID_OFFER_O),
+		RQ = wxWindow:findWindowById(?ID_OFFER_RQ),
+		OQ = wxWindow:findWindowById(?ID_OFFER_OQ),
+		RC = wx:typeCast(RR, wxChoice),
+		OC = wx:typeCast(OR, wxChoice),
+		RQC = wx:typeCast(RQ, wxSpinCtrl),
+		OQC = wx:typeCast(OQ, wxSpinCtrl),
+		W = wxControlWithItems:getStringSelection(RC),
+		H = wxControlWithItems:getStringSelection(OC),
+		Q1 = wxSpinCtrl:getValue(RQC),
+		Q2 = wxSpinCtrl:getValue(OQC),
+		N = node_d(State),
+		if N =/= none, W =/= none, H =/= none ->
+			arbitrator:offer(N, W, Q1, H, Q2);
+		true -> true
+		end,
+		wxWindow:destroy(W0);
+	_ ->
+		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
+		{noreply, State}
+	end;
 handle_event(#wx{id = Id,
 		 event = #wxCommand{type = command_menu_selected}},
 		 State = #state{}) ->
@@ -369,6 +489,9 @@ handle_event(#wx{id = Id,
 		true -> true
 		end,
 		{noreply, State};
+	?ID_TRADE ->
+		make_offer(State),
+		{noreply, State};
 	?ID_IDENTIFY ->
 		Val = identify_d(State),
 		if Val =/= none -> 
@@ -380,7 +503,7 @@ handle_event(#wx{id = Id,
 		arbitrator:build("Harvester"),
 		{noreply, State};
 	?ID_CARGO_SHIP ->
-		arbitrator:build("Cargo Ship"),
+		arbitrator:build("Cargo ship"),
 		{noreply, State};
 	?ID_ESCORT ->
 		arbitrator:build("Escort"),
@@ -390,7 +513,9 @@ handle_event(#wx{id = Id,
 		{noreply, State};
 	?ID_HARVEST ->
 		Resource = dialog_harvest_rsrc(State),
-		arbitrator:harvest(Resource),
+		if Resource =/= none ->
+			arbitrator:harvest(Resource)
+		end,
 		{noreply, State};
 	_ ->
 		format(State#state.log, "Unhandled event: #~p ~n", [Id]),

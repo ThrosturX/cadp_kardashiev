@@ -18,7 +18,8 @@
 		ship_types/0, 
 		resource_types/0,
 		set_node_name/1,
-		accept_offer/1]).
+		accept_offer/1, 
+		cancel_offer/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -198,6 +199,11 @@ trade_request(TWant, THave) ->
 cancel_request(TWant, THave) ->
 	Fun = fun(N) -> send(ctrade, {TWant, THave}, N) end,
 	lists:foreach(Fun, nodes()).	
+
+%% Cancel offer
+cancel_offer(Node) ->
+	gen_server:cast(solar_system, {cOutOffer, Node}),
+	send(coffer, {}, Node).
 
 %% Check if offer is possible then send offer to Node
 offer(Node, TWant, QT, THave, QH) ->
@@ -422,6 +428,23 @@ handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	NOff = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Off),
 	arbitrator:update_offers(NOff),
 	{noreply, {Res, Ships, TradeRes, Req, NOff, Out}};
+%% receive an offer cancellation
+handle_cast({cOutOffer, Node}, State) ->
+	io:format("Cancel our own offer ~n"),
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	[{_, _, THave, Qt}] = dict:fetch(Node, Out),
+	NShips = dict:update_counter('Cargo ship', 1, Ships),
+	NOut = dict:erase(Node, Off),
+	NRes = dict:update_counter(THave, Qt, Res),
+	NTradeRes = dict:update_counter(THave, -Qt, TradeRes),
+	{noreply, {NRes, NShips, NTradeRes, Req, Off, NOut}};
+handle_cast({Node, coffer, _}, State) ->
+	io:format("Remove cancelled offer~n"),
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	NOff = dict:erase(Node, Off),
+	arbitrator:update_offers(NOff),
+	{noreply, {Res, Ships, TradeRes, Req, NOff, Out}};
+%% adds an outgoing offer to the list
 handle_cast({Node, outoffer, {TWant, QT, THave, QH}}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out} = State,
 	Fun = fun(Old) -> Old end,
