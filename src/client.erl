@@ -392,10 +392,11 @@ dialog_harvest_rsrc(State) ->
 
 node_d(State) -> 
 	Frame = State#state.win,
+	Nodes = lists:foreach(atom_to_list, nodes()),
 	Dialog = wxSingleChoiceDialog:new(Frame,
 									  "Make offer:",
 									  "Offer",
-									  nodes()),
+									  Nodes),
 	Ret = wxDialog:showModal(Dialog),
 	if Ret == ?wxID_OK ->
 		Choice = wxSingleChoiceDialog:getStringSelection(Dialog);
@@ -443,7 +444,7 @@ handle_event(#wx{id = Id,
 		Q1 = wxSpinCtrl:getValue(RQC),
 		Q2 = wxSpinCtrl:getValue(OQC),
 		N = node_d(State),
-		if N =/= none, W =/= none, H =/= none ->
+		if N =/= none, W =/= "", H =/= "" ->
 			arbitrator:offer(N, W, Q1, H, Q2);
 		true -> true
 		end,
