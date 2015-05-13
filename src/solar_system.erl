@@ -15,6 +15,7 @@
 		cancel_request/2, 
 		offer/5,
 		build/1, 
+		build_process/1,
 		ship_types/0, 
 		resource_types/0,
 		set_node_name/1]).
@@ -85,9 +86,12 @@ resource_types() ->
 ship_types() ->
 	["Escort", "Harvester", "Cargo ship"].
 
+build(Type) ->
+	spawn(solar_system, build_process, [Type]).
+
 %% Build function checks the Type of ship and 
 %% if there are enough resources to build the ship 
-build(Type) ->
+build_process(Type) ->
 	SType = atom_to_list(Type),
 	io:format("Build: ~p ~n", [SType]),
 	arbitrator:format("Build: ~p ~n", [SType]),
