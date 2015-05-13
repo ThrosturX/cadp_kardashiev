@@ -71,6 +71,7 @@ stop() ->
     gen_server:cast(?SERVER, stop).
 
 set_node_name(Name) ->
+	%io:format("Setting node name to: ~w~n", [Name]),
 	net_kernel:start([Name, longnames]),
 	erlang:set_cookie(node(), kaka). 
 	
