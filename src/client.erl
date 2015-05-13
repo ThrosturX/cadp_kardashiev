@@ -19,6 +19,7 @@
 -define(ID_HARVESTER, 107).
 -define(ID_CARGO_SHIP, 108).
 -define(ID_ESCORT, 109).
+-define(ID_IDENTIFY, 110).
 
 start() ->
 	start([]).
@@ -56,6 +57,7 @@ init(Options) ->
 	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
 	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_CONNECT, "&Connect"),
+	wxMenu:append(Comms, ?ID_IDENTIFY, "&Set Name"),
 	Game	= wxMenu:new([]),
 	wxMenu:append(Game, ?wxID_ABOUT, "&About"),
 	wxMenu:appendSeparator(Game),
@@ -233,11 +235,27 @@ connect_d(State) ->
 								   Str,
 								   [{style, ?wxOK bor ?wxCANCEL},
 									{caption, "Connect to node"},
-									{value, "node@hostname"}]),
+									{value, "name@ip_addr"}]),
 	Ret = wxDialog:showModal(Dialog),
 	wxDialog:destroy(Dialog),
 	if Ret == ?wxID_OK ->
 		arbitrator:connect(wxTextEntryDialog:getValue(Dialog));
+	true -> true
+	end,
+	ok.
+
+identify_d(State) ->
+	Frame = State#state.win,
+	Str = "Set name to:",
+	Dialog = wxTextEntryDialog:new(Frame,
+								   Str,
+								   [{style, ?wxOK bor ?wxCANCEL},
+									{caption, "Set name"},
+									{value, "badname@ip_addr"}]),
+	Ret = wxDialog:showModal(Dialog),
+	wxDialog:destroy(Dialog),
+	if Ret == ?wxID_OK ->
+		arbitrator:set_node_name(wxTextEntryDialog:getValue(Dialog));
 	true -> true
 	end,
 	ok.
@@ -302,7 +320,10 @@ handle_event(#wx{id = Id,
 		{stop, normal, State};
 	?ID_CONNECT ->
 		connect_d(State),
-		format(State#state.log, "CONNECT event: #~p ~n", [Id]),
+		{noreply, State};
+	?ID_IDENTIFY ->
+		identify_d(State),
+		format(State#state.log, "You are now known as: #~p ~n", [Id]),
 		{noreply, State};
 	?ID_HARVESTER ->
 		arbitrator:build("Harvester"),

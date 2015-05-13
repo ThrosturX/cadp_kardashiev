@@ -7,6 +7,7 @@
 	format/2, 
 	die/0, 
 	connect/1, 
+	set_node_name/1, 
 	request_trade/2, 
 	cancel_trade/2, 
 	offer/5, 
@@ -29,7 +30,7 @@ die() -> client:notify(die).
 
 %%%% GUI to Solar System
 %% Connect to network of nodes
-connect(Node) -> solar_system:connect(l2a(Node)),
+connect(Node) -> solar_system:connect(l2a(Node)).
 set_node_name(Node) -> solar_system:connect(l2a(Node)).
 
 %%% Trade Section
