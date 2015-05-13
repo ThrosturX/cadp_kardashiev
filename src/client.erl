@@ -237,11 +237,11 @@ connect_d(State) ->
 									{caption, "Connect to node"},
 									{value, "name@ip_addr"}]),
 	Ret = wxDialog:showModal(Dialog),
-	wxDialog:destroy(Dialog),
 	if Ret == ?wxID_OK ->
 		arbitrator:connect(wxTextEntryDialog:getValue(Dialog));
 	true -> true
 	end,
+	wxDialog:destroy(Dialog),
 	ok.
 
 identify_d(State) ->
@@ -253,11 +253,12 @@ identify_d(State) ->
 									{caption, "Set name"},
 									{value, "badname@ip_addr"}]),
 	Ret = wxDialog:showModal(Dialog),
-	wxDialog:destroy(Dialog),
 	if Ret == ?wxID_OK ->
-		arbitrator:set_node_name(wxTextEntryDialog:getValue(Dialog));
+		Val = wxTextEntryDialog:getValue(Dialog),
+		arbitrator:set_node_name(Val);
 	true -> true
 	end,
+	wxDialog:destroy(Dialog),
 	ok.
 
 dialog_harvest_rsrc(State) -> 
