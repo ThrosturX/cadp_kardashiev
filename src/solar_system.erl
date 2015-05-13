@@ -15,7 +15,8 @@
 		offer/5,
 		build/1, 
 		ship_types/0, 
-		resource_types/0]).
+		resource_types/0,
+		set_node_name/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -64,6 +65,9 @@ start_link() ->
 
 stop() ->
     gen_server:cast(?SERVER, stop).
+
+set_node_name(Name) ->
+	net_kernel:start([Name, longnames]). 
 	
 home_planet() -> 
 	io:format("Home planet~n").
