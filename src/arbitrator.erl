@@ -48,7 +48,9 @@ connect(Node) -> solar_system:connect(l2a(Node)).
 %% Sets your node name
 set_node_name(Node) -> 	solar_system:set_node_name(l2a(Node)).
 %% Send the message Msg to Node 
-send_private_message(Node, Msg) -> solar_system:send(msg, Msg, Node).
+send_private_message(Node, Msg) -> 
+	solar_system:send(msg, Msg, Node),
+	client:notify({format, "Sent ~p to ~p ~n", [Msg, Node]}).
 
 %%% Trade Section
 %% Send to all nodes request trade  
