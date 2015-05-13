@@ -156,8 +156,8 @@ make_offer(State) ->
 							?wxSTAY_ON_TOP
 						}]),
 
-	Avail = ["MOCK", "CHOICES", "LOL"],
-	Owned = ["SOCK", "CHOICES", "FOO"],
+	Avail = arbitrator:resource_types(),
+	Owned = arbitrator:resource_types(),
 
 	Panel = wxPanel:new(Frame, []),
 	SuperSizer = wxBoxSizer:new(?wxVERTICAL),
