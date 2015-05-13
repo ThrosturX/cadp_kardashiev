@@ -72,56 +72,64 @@ print_resources() ->
 	gen_server:call(solar_system, resources).
 
 resource_types() ->
-	['Iron', 'Food', 'Gas'].
+	["Iron", "Food", "Gas"].
 
 ship_types() ->
-	['Escort', 'Harvester', 'Cargo ship'].
+	["Escort", "Harvester", "Cargo ship"].
 
 %% Build function checks the Type of ship and 
 %% if there are enough resources to build the ship 
 build(Type) ->
 	io:format("Build: ~w~n", [Type]),
+	arbitrator:receive_message("Build: ~w", [Type]),
 	if
 		Type == 'Death Ray' ->
 			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
-					arbitrator:receive_message("Building Death Ray!").
+					arbitrator:receive_message("Building: ~w", [Type]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
-					arbitrator:receive_message("Not enough resources"),
-					io:format("Not enough resources~n")
+					io:format("Not enough resources~n"),
+					arbitrator:receive_message("Not enough resources")
 			end;
 		Type == 'Harvester' ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
+					arbitrator:receive_message("Building: ~w", [Type]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
-					io:format("Not enough resources~n")
+					io:format("Not enough resources~n"),
+					arbitrator:receive_message("Not enough resources")
 			end;
 		Type == 'Cargo ship' ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
+					arbitrator:receive_message("Building: ~w", [Type]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
-					io:format("Not enough resources~n")
+					io:format("Not enough resources~n"),
+					arbitrator:receive_message("Not enough resources")
 			end;
 		Type == 'Escort' ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
+					arbitrator:receive_message("Building: ~w", [Type]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
-					io:format("Not enough resources~n")
+					io:format("Not enough resources~n"),
+					arbitrator:receive_message("Not enough resources")
 			end;
 		true ->
 			io:format("Unkown Type: ~w~n", [Type]),
+			arbitrator:receive_message("Unkown Type: ~w", [Type]),
 			false
 	end.
 
@@ -295,6 +303,7 @@ handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	
 	%TODO: Add request to list of trade requests in GUI
 	{Res, Ships, TradeRes, Req, Off} = State,
+	
 	Fun = fun(Old) -> Old ++ [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),	
 	arbitrator:update_contacts(NReq),
@@ -302,7 +311,10 @@ handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 %% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
+
 	%TODO: remove request to list of trade requests in GUI
+	
+
 	{noreply, State};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),

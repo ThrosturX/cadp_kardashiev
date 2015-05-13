@@ -16,6 +16,9 @@
 -define(ID_BROADCAST, 104).
 -define(ID_MESSAGE, 105).
 -define(ID_CONNECT, 106).
+-define(ID_HARVESTER, 107).
+-define(ID_CARGO_SHIP, 108).
+-define(ID_ESCORT, 109).
 
 start() ->
 	start([]).
@@ -40,6 +43,10 @@ init(Options) ->
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Kardashiev Client"),
 	MB = wxMenuBar:new(),
 	Build	= wxMenu:new([]),
+	wxMenu:append(Build, ?ID_HARVESTER, "&Harvester"),
+	wxMenu:append(Build, ?ID_CARGO_SHIP, "&Cargo Ship"),
+	wxMenu:append(Build, ?ID_ESCORT, "&Escort"),
+	wxMenu:appendSeparator(Build),
 	wxMenu:append(Build, ?ID_DEATH_RAY, "&Death Ray"),
 	Mission = wxMenu:new([]),
 	wxMenu:append(Mission, ?ID_HARVEST, "&Harvest"),
@@ -233,7 +240,18 @@ connect_d(State) ->
 		arbitrator:connect(wxTextEntryDialog:getValue(Dialog));
 	true -> true
 	end,
-	format(State#state.log, "~p, ~p ~n", [Ret, ?wxID_OK]).
+	ok.
+
+dialog_harvest_rsrc(State) -> 
+	Frame = State#state.win,
+	Resources = arbitrator:resource_types(),
+	Dialog = wxSingleChoiceDialog:new(Frame,
+									  "Harvest resource:",
+									  "Harvest",
+									  Resources),
+	Choice = wxDialog:showModal(Dialog),
+	wxDialog:destroy(Dialog),
+	format(State#state.log, "~p ~n", [Choice]).
 
 %% Callbacks
 handle_info({'EXIT',_, wx_deleted}, State) ->
@@ -283,6 +301,22 @@ handle_event(#wx{id = Id,
 	?ID_CONNECT ->
 		connect_d(State),
 		format(State#state.log, "CONNECT event: #~p ~n", [Id]),
+		{noreply, State};
+	?ID_HARVESTER ->
+		arbitrator:build("Harvester"),
+		{noreply, State};
+	?ID_CARGO_SHIP ->
+		arbitrator:build("Cargo Ship"),
+		{noreply, State};
+	?ID_ESCORT ->
+		arbitrator:build("Escort"),
+		{noreply, State};
+	?ID_DEATH_RAY ->
+		arbitrator:build("Death Ray"),
+		{noreply, State};
+	?ID_HARVEST ->
+		Resource = dialog_harvest_rsrc(State),
+		arbitrator:harvest(Resource),
 		{noreply, State};
 	_ ->
 		format(State#state.log, "Unhandled event: #~p ~n", [Id]),
