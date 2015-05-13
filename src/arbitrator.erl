@@ -29,7 +29,8 @@ die() -> client:notify(die).
 
 %%%% GUI to Solar System
 %% Connect to network of nodes
-connect(Node) -> solar_system:connect(l2a(Node)).
+connect(Node) -> solar_system:connect(l2a(Node)),
+set_node_name(Node) -> solar_system:connect(l2a(Node)).
 
 %%% Trade Section
 %% Send to all nodes request trade  
