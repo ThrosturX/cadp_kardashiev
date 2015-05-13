@@ -224,7 +224,7 @@ accept_offer(Node) ->
 			{ok, Reply};% TODO: Inform GUI
 		true ->
 			io:format("Accepting offer from ~p~n", [Node]),
-			ReplyFromOther = sendWait(accept_offer, node(), Node, 5000),
+			ReplyFromOther = sendWait(accept_offer, [], Node, 5000),
 			if
 				ReplyFromOther == confirm ->
 					%sleep, need to spawn if so.
@@ -338,6 +338,7 @@ handle_call({get_offer_from, Node}, _From, State) ->
 	{_, _, _, _, Off, _} = State,
 	[Offer] = dict:fetch(Node, Off),
 	{reply, Offer, State};
+handle_call({Node, msg, Msg}, _From, State)
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
