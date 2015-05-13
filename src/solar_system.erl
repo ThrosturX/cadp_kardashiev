@@ -69,6 +69,8 @@ home_planet() ->
 print_resources() ->
 	gen_server:call(solar_system, resources).
 
+%% Build function checks the Type of ship and 
+%% if there are enough resources to build the ship 
 build(Type) ->
 	io:format("Build: ~w~n", [Type]),
 	if
@@ -184,7 +186,8 @@ init([]) ->
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	{ok, {Resources, Ships, TradeRes}}.
 
-%% S
+%% checks if there are enough resources if so detract from resources
+%% and reply with ok to build else reply with don't build
 handle_call({build, Iron, Food, Gas}, _From, State) ->
 	{Res, Ships, Trade} = State,
 	I = dict:fetch('Iron', Res),
@@ -245,6 +248,8 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
+
+%% Builds ship of type Type and adds it to Ships, takes random time
 handle_cast({building, Type}, State) ->
 	io:format("Cast-building: ~w~n", [Type]),
 	randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
