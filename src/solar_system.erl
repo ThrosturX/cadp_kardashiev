@@ -402,7 +402,7 @@ handle_cast({harvest, Type, Qty}, State) ->
 	{noreply, {NewRes, NewShips, Trade, Req, Off, Out}};	
 %% receives a message from another player
 handle_cast({Node, msg, Msg}, State) ->
-	io:format("!!! Private message from ~w: ~w !!!~n", [Node, Msg]),
+	arbitrator:format("!!! Private message from ~w: ~w !!!~n", [Node, Msg]),
 	{noreply, State};
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
