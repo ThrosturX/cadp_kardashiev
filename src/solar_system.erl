@@ -313,9 +313,11 @@ handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
 
 	%TODO: remove request to list of trade requests in GUI
-	
-
-	{noreply, State};
+	{Res, Ships, TradeRes, Req, Off} = State,
+	Fun = fun(Old) -> Old -- [{TWant, THave}] end,
+	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),
+	arbitrator:update_contacts(NReq),
+	{noreply, {Res, Ships, TradeRes, NReq, Off}};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
 	%TODO: Update offer list in GUI.
