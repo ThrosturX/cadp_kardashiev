@@ -4,6 +4,7 @@
 	update_ships/1, 
 	update_offers/1, 
 	receive_message/1, 
+	connect/1, 
 	request_trade/2, 
 	cancel_trade/2, 
 	offer/5, 
