@@ -185,7 +185,7 @@ add_message(State, M) ->
 	S = M ++ "~n",
 	format(State#state.log, S, []).
 
-update_offers(State, Offers ->
+update_offers(State, Offers) ->
 	ListCtrl = State#state.offers,
 	wxListCtrl:deleteAllItems(ListCtrl),
 	insert_offer(ListCtrl, Offers),
