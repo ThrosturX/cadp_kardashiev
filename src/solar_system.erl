@@ -108,7 +108,8 @@ build_process(Type) ->
 					building(Type);
 				true ->
 					io:format("Not enough resources~n", []),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:receive_message("Not enough resources"),
+					arbitrator:receive_message("Death Ray: 1000 Iron, 1000 Food, 1000 Gas")
 			end;
 		Type == 'Harvester' ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
@@ -117,7 +118,8 @@ build_process(Type) ->
 					building(Type);
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:receive_message("Not enough resources"),
+					arbitrator:receive_message("Harvester: 10 Iron, 10 Food, 10 Gas")
 			end;
 		Type == 'Cargo ship' ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
@@ -126,7 +128,8 @@ build_process(Type) ->
 					building(Type);
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:receive_message("Not enough resources"),
+					arbitrator:receive_message("Cargo ship: 30 Iron, 30 Food, 30 Gas")
 			end;
 		Type == 'Escort' ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
@@ -135,7 +138,8 @@ build_process(Type) ->
 					building(Type);
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:receive_message("Not enough resources"),
+					arbitrator:receive_message("Escort ship: 60 Iron, 60 Food, 60 Gas")
 			end;
 		true ->
 			io:format("Unkown Type: ~p~n", [SType]),
