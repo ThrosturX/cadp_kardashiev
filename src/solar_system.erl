@@ -2,7 +2,6 @@
 -behavior(gen_server).
 	
 -export([start_link/0,
-		home_planet/0,
 		spawner/0,
 		print/0,
 		harvest/1,
@@ -18,18 +17,40 @@
 		build_process/1,
 		ship_types/0, 
 		resource_types/0,
-		set_node_name/1]).
+		set_node_name/1,
+		accept_offer/1, 
+		cancel_offer/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 
 -define(SERVER, ?MODULE).
+
 -define(MAX_HARVEST, 10).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
+
 -define(MAX_BUILD_TIME, 10000).
--define(MIN_BUILD_TIME, 4000).
+-define(MIN_BUILD_TIME, 7000).
+
+-define(CARGO_SHIP_FACTOR, 2).
+-define(DEATH_RAY_FACTOR,10).
+-define(ESCORT_FACTOR, 4).
+-define(HARVESTER_FACTOR, 1).
+
+-define(CARGO_SHIP_IRON, 30).
+-define(CARGO_SHIP_FOOD, 30).
+-define(CARGO_SHIP_GAS, 30).
+-define(DEATH_RAY_IRON, 1000).
+-define(DEATH_RAY_FOOD, 1000).
+-define(DEATH_RAY_GAS, 1000).
+-define(ESCORT_IRON, 60).
+-define(ESCORT_FOOD, 60).
+-define(ESCORT_GAS, 60).
+-define(HARVESTER_IRON, 10).
+-define(HARVESTER_FOOD, 10).
+-define(HARVESTER_GAS, 10).
 
 random(N) ->
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
@@ -54,16 +75,10 @@ randomSleep(N,M) ->
 	sleep(random(N,M)).
 
 % returns the resources formatted for the arbitrator
-list_resources(State) ->
-	{Res, _, _, _, _} = State,
-	dict:to_list(Res).
-
-list_ships(State) -> 
-	{_, Ships, _, _, _} = State,
-	dict:to_list(Ships).
+%list_resources(State) -> {Res, _, _, _, _, _} = State, dict:to_list(Res).
+%list_ships(State) -> {_, Ships, _, _, _, _} = State, dict:to_list(Ships).
 	
 start_link() ->
-	register(home, spawn(solar_system, home_planet, [])),
 	spawn(solar_system, spawner, []),
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
@@ -75,9 +90,6 @@ set_node_name(Name) ->
 	net_kernel:start([Name, longnames]),
 	erlang:set_cookie(node(), kaka). 
 	
-home_planet() -> 
-	io:format("Home planet~n").
-
 print() ->
 	gen_server:call(solar_system, resources).
 
@@ -87,6 +99,7 @@ resource_types() ->
 ship_types() ->
 	["Escort", "Harvester", "Cargo ship"].
 
+%% This function is call by the arbitrator to build
 build(Type) ->
 	spawn(solar_system, build_process, [Type]).
 
@@ -94,66 +107,68 @@ build(Type) ->
 %% if there are enough resources to build the ship 
 build_process(Type) ->
 	SType = atom_to_list(Type),
-	io:format("Build: ~p ~n", [SType]),
 	arbitrator:format("Build: ~p ~n", [SType]),
 	if
 		Type == 'Death Ray' ->
-			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
+			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_IRON, ?DEATH_RAY_FOOD, ?DEATH_RAY_GAS}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~p~n", [SType]),
-					arbitrator:format("Building: ~p", [SType]),
-					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-					gen_server:cast(solar_system, {building, Type}),
-					arbitrator:format("Done building: ~p", [SType]);
+					building(Type);
 				true ->
-					io:format("Not enough resources~n", []),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:format("Not enough resources~n", []),
+					arbitrator:format("DEATH RAY: ~p Iron, ~p Food, ~p Gas~n", [?DEATH_RAY_IRON, ?DEATH_RAY_FOOD, ?DEATH_RAY_GAS])
 			end;
 		Type == 'Harvester' ->
-			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
+			Reply = gen_server:call(solar_system, {build, ?HARVESTER_IRON, ?HARVESTER_FOOD, ?HARVESTER_GAS}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~p~n", [SType]),
-					arbitrator:format("Building: ~p", [SType]),
-					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-					gen_server:cast(solar_system, {building, Type}),
-					arbitrator:format("Done building: ~p", [SType]);
+					building(Type);
 				true ->
-					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:format("Not enough resources~n", []),
+					arbitrator:format("Harvester: ~p Iron, ~p Food, ~p Gas~n", [?HARVESTER_IRON, ?HARVESTER_FOOD, ?HARVESTER_GAS])
 			end;
 		Type == 'Cargo ship' ->
-			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
+			Reply = gen_server:call(solar_system, {build, ?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~p~n", [SType]),
-					arbitrator:format("Building: ~p", [SType]),
-					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-					gen_server:cast(solar_system, {building, Type}),
-					arbitrator:format("Done building: ~p", [SType]);
+					building(Type);
 				true ->
-					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:format("Not enough resources~n", []),
+					arbitrator:format("Cargo ship: ~p Iron, ~p Food, ~p Gas~n", [?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS])
 			end;
 		Type == 'Escort' ->
-			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
+			Reply = gen_server:call(solar_system, {build, ?ESCORT_IRON, ?ESCORT_FOOD, ?ESCORT_GAS}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~p~n", [SType]),
-					arbitrator:format("Building: ~p", [SType]),
-					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-					gen_server:cast(solar_system, {building, Type}),
-					arbitrator:format("Done building: ~p", [SType]);
+					building(Type);
 				true ->
-					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:format("Not enough resources~n", []),
+					arbitrator:format("Escort ship: ~p Iron, ~p Food, ~p Gas~n", [?ESCORT_IRON, ?ESCORT_FOOD, ?ESCORT_GAS])
 			end;
 		true ->
 			io:format("Unkown Type: ~p~n", [SType]),
 			arbitrator:format("Unkown Type: ~p", [SType]),
 			false
 	end.
+
+%% Building function sleeps for the time it takes to build ship of Type
+building(Type) ->
+	SType = atom_to_list(Type),
+	arbitrator:format("Building: ~p~n", [SType]),
+	if
+		Type == 'Cargo hip' ->
+			randomSleep(?MIN_BUILD_TIME * ?CARGO_SHIP_FACTOR, ?MAX_BUILD_TIME * ?CARGO_SHIP_FACTOR);
+		Type == 'Death Ray' ->
+			randomSleep(?MIN_BUILD_TIME * ?DEATH_RAY_FACTOR, ?MAX_BUILD_TIME * ?DEATH_RAY_FACTOR);
+		Type == 'Escort' ->
+			randomSleep(?MIN_BUILD_TIME * ?ESCORT_FACTOR, ?MAX_BUILD_TIME * ?ESCORT_FACTOR);
+		Type == 'Harvester' ->
+			randomSleep(?MIN_BUILD_TIME * ?HARVESTER_FACTOR, ?MAX_BUILD_TIME * ?HARVESTER_FACTOR);
+		true ->
+			io:format("Error in building function~n")
+	end,
+	gen_server:cast(solar_system, {building, Type}),
+	arbitrator:format("Done building: ~p~n", [SType]).
 
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
@@ -185,18 +200,55 @@ cancel_request(TWant, THave) ->
 	Fun = fun(N) -> send(ctrade, {TWant, THave}, N) end,
 	lists:foreach(Fun, nodes()).	
 
+%% Cancel offer
+cancel_offer(Node) ->
+	gen_server:cast(solar_system, {cOutOffer, Node}),
+	send(coffer, {}, Node).
+
 %% Check if offer is possible then send offer to Node
 offer(Node, TWant, QT, THave, QH) ->
 	io:format("Offer~n"),
-	Reply = gen_server:call(solar_system, {reserve_resource, THave, QH}),
-	if 
+		
+	HasOffer = gen_server:call(solar_system, {have_offer_to, Node}),
+	%io:format("HasOffer: ~p~n", [HasOffer]),
+	if
+		HasOffer =/= true ->
+			Reply = gen_server:call(solar_system, {reserve_resource, THave, QH}),
+			if 
+				Reply == noship ->
+					{ok, Reply};% TODO: Inform GUI
+				Reply == nores ->
+					{ok, Reply};% TODO: Inform GUI
+				true ->
+					% TODO: Update offers in GUI.
+					send(offer, {TWant, QT, THave, QH}, Node),
+					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
+			end;
+		true ->
+			io:format("Outstanding offer to ~p present.~n", [Node])
+	end.
+	
+accept_offer(Node) ->
+	% First check if resources are available
+	io:format("Are resources available?~n"),
+	{THave, Qty, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
+	
+	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty}),
+	if
 		Reply == noship ->
 			{ok, Reply};% TODO: Inform GUI
 		Reply == nores ->
 			{ok, Reply};% TODO: Inform GUI
 		true ->
-			% TODO: Update offers in GUI.
-			send(offer, {TWant, QT, THave, QH}, Node)
+			io:format("Accepting offer from ~p~n", [Node]),
+			ReplyFromOther = sendWait(accept_offer, [], Node, 5000),
+			if
+				ReplyFromOther == confirm ->
+					%sleep, need to spawn if so.
+					gen_server:cast(solar_system, {offer_confirmed, Node});
+				true ->
+					gen_server:cast(solar_system, {offer_cancelled, Node})
+			end
 	end.
 	
 spawner() -> 
@@ -215,7 +267,6 @@ send(Type, Msg, Node) ->
 
 sendWait(Type, Msg, Node, Time) ->	
 	gen_server:call({solar_system, Node}, {node(), Type, Msg}, Time).
-
 	
 %%% gen_server callbacks
 
@@ -231,14 +282,15 @@ init([]) ->
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
+	OutOffers = dict:from_list([]),
 	arbitrator:update_ships(dict:to_list(Ships)),
 	arbitrator:update_resources(dict:to_list(Resources)),
-	{ok, {Resources, Ships, TradeRes, Requests, Offers}}.
+	{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers}}.
 
 %% checks if there are enough resources if so detract from resources
 %% and reply with ok to build else reply with don't build
 handle_call({build, Iron, Food, Gas}, _From, State) ->
-	{Res, Ships, Trade, Req, Off} = State,
+	{Res, Ships, Trade, Req, Off, Out} = State,
 	I = dict:fetch('Iron', Res),
 	F = dict:fetch('Food', Res),
 	G = dict:fetch('Gas', Res),
@@ -249,23 +301,24 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 
 			NewRes = dict:update_counter('Gas', -Gas, TempRes2),
 			arbitrator:update_resources(dict:to_list(NewRes)),
-			{reply, build_ok, {NewRes, Ships, Trade, Req, Off}};	
+			{reply, build_ok, {NewRes, Ships, Trade, Req, Off, Out}};	
 		true ->
 			{reply, build_nores, State}
 	end;	
 %% prints the resources and ships available
 handle_call(resources, _From, State) ->
-	{Resources, Ships, TradeRes, Req, Off} = State,
+	{Resources, Ships, TradeRes, Req, Off, Out} = State,
 	io:format("Resources: ~p~n", [dict:to_list(Resources)]),
 	io:format("Ships: ~p~n", [dict:to_list(Ships)]),
 	io:format("TradeRes: ~p~n", [dict:to_list(TradeRes)]),
 	io:format("Trade requests: ~p~n", [dict:to_list(Req)]),
 	io:format("Trade offers: ~p~n", [dict:to_list(Off)]),
+	io:format("Outgoing trade offers: ~p~n", [dict:to_list(Out)]),
 	{reply, [], State};
 %% starts a harvest and reserves a harvester if one is available. If not it ends the operation
 handle_call(start_harvest, _From, State) ->			
 	io:format("check if enough ships~n"),
-	{Res, Ships, Trade, Req, Off} = State,
+	{Res, Ships, Trade, Req, Off, Out} = State,
 	H = dict:fetch('Harvester', Ships),
 	if 
 		H == 0 -> 
@@ -273,12 +326,12 @@ handle_call(start_harvest, _From, State) ->
 		true -> 
 			NewShips = dict:update_counter('Harvester', -1, Ships),
 			arbitrator:update_ships(dict:to_list(NewShips)),
-			{reply, ship, {Res, NewShips, Trade, Req, Off}}
+			{reply, ship, {Res, NewShips, Trade, Req, Off, Out}}
 	end;
 %% checks if the resources and ships needed for the given trade is available
 handle_call({reserve_resource, Type, Qty}, _From, State) ->
 	io:format("Check if enough resources~n"),
-	{Res, Ships, Trade, Req, Off} = State,
+	{Res, Ships, Trade, Req, Off, Out} = State,
 	C = dict:fetch('Cargo ship', Ships),
 	if 
 		C == 0 -> 
@@ -292,10 +345,36 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 					NewTrade = dict:update_counter(Type, Qty, Trade),
 					arbitrator:update_resources(dict:to_list(NewRes)),
 					arbitrator:update_ships(dict:to_list(NewShips)),
-					{reply, ok, {NewRes, NewShips, NewTrade, Req, Off}};
+					{reply, ok, {NewRes, NewShips, NewTrade, Req, Off, Out}};
 				true -> 
 					{reply, nores, State}
 			end
+	end;
+handle_call({get_offer_from, Node}, _From, State) ->
+	{_, _, _, _, Off, _} = State,
+	[Offer] = dict:fetch(Node, Off),
+	{reply, Offer, State};
+handle_call({have_offer_to, Node}, _From, State) ->
+	{_, _, _, _, _, Out} = State,
+	Reply = dict:is_key(Node, Out),
+	%io:format("Reply: ~p~n", [Reply]),
+	{reply, Reply, State};
+handle_call({Node, accept_offer, _Msg}, _From, State) ->
+	%% Check if the key Node exists in out offers, if so confirm trade, otherwise cancel
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	ContainsNode = dict:is_key(Node, Out),
+	if
+		ContainsNode == true ->
+			[{TGot, QG, THad, QH}] = dict:fetch(Node, Out),
+	
+			%% Update dictionaries
+			NewOut = dict:erase(Node, Out), 
+			NewShips = dict:update_counter('Cargo ship', 1, Ships),
+			NewRes = dict:update_counter(TGot, QG, Res),
+			NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+			{reply, confirm, {NewRes, NewShips, NewTradeRes, Req, Off, NewOut}};
+		true ->
+			{reply, cancel, State}
 	end;
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
@@ -304,50 +383,94 @@ handle_call(_Msg, _From, State) ->
 %% Builds ship of type Type and adds it to Ships, takes random time
 handle_cast({building, Type}, State) ->
 	%io:format("Cast-building: ~w~n", [Type]),
-	{Resources, Ships, Trade, Req, Off} = State,
+	{Resources, Ships, Trade, Req, Off, Out} = State,
 	NewShips = dict:update_counter(Type, 1, Ships),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	%io:format("Cast-building: ~w - Done!~n", [Type]),
-	{noreply, {Resources, NewShips, Trade, Req, Off}};
+	{noreply, {Resources, NewShips, Trade, Req, Off, Out}};
 %% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Type, Qty}, State) ->
 	io:format("harvest cast~n"),
 	%io:format("State is: ~p~n", [State]),
-	{Resources, Ships, Trade, Req, Off} = State,
+	{Resources, Ships, Trade, Req, Off, Out} = State,
 	NewShips = dict:update_counter('Harvester', 1, Ships),
 	NewRes = dict:update_counter(Type, Qty, Resources),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	arbitrator:update_resources(dict:to_list(NewRes)),
 	io:format("~w: ~w~n", [Type, Qty]),
-	{noreply, {NewRes, NewShips, Trade, Req, Off}};	
+	{noreply, {NewRes, NewShips, Trade, Req, Off, Out}};	
 %% receives a message from another player
 handle_cast({Node, msg, Msg}, State) ->
-	io:format("Message from ~w: ~w~n", [Node, Msg]),
+	io:format("!!! Private message from ~w: ~w !!!~n", [Node, Msg]),
 	{noreply, State};
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
-	{Res, Ships, TradeRes, Req, Off} = State,
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
 	Fun = fun(Old) -> [{TWant, THave}] ++ Old -- [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),	
 	arbitrator:update_contacts(NReq),
-	{noreply, {Res, Ships, TradeRes, NReq, Off}};
+	{noreply, {Res, Ships, TradeRes, NReq, Off, Out}};
 %% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
-	{Res, Ships, TradeRes, Req, Off} = State,
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
 	Fun = fun(Old) -> Old -- [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),
 	arbitrator:update_contacts(NReq),
-	{noreply, {Res, Ships, TradeRes, NReq, Off}};
+	{noreply, {Res, Ships, TradeRes, NReq, Off, Out}};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
 	%TODO: Update offer list in GUI.
-	{Res, Ships, TradeRes, Req, Off} = State,
-	Fun = fun(_) -> {TWant, QT, THave, QH} end,
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	Fun = fun(Old) -> Old end,
 	NOff = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Off),
 	arbitrator:update_offers(NOff),
-	{noreply, {Res, Ships, TradeRes, Req, NOff}};
+	{noreply, {Res, Ships, TradeRes, Req, NOff, Out}};
+%% receive an offer cancellation
+handle_cast({cOutOffer, Node}, State) ->
+	io:format("Cancel our own offer ~n"),
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	[{_, _, THave, Qt}] = dict:fetch(Node, Out),
+	NShips = dict:update_counter('Cargo ship', 1, Ships),
+	NOut = dict:erase(Node, Off),
+	NRes = dict:update_counter(THave, Qt, Res),
+	NTradeRes = dict:update_counter(THave, -Qt, TradeRes),
+	{noreply, {NRes, NShips, NTradeRes, Req, Off, NOut}};
+handle_cast({Node, coffer, _}, State) ->
+	io:format("Remove cancelled offer~n"),
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	NOff = dict:erase(Node, Off),
+	arbitrator:update_offers(NOff),
+	{noreply, {Res, Ships, TradeRes, Req, NOff, Out}};
+%% adds an outgoing offer to the list
+handle_cast({Node, outoffer, {TWant, QT, THave, QH}}, State) ->
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	Fun = fun(Old) -> Old end,
+	NOut = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Out),
+	{noreply, {Res, Ships, TradeRes, Req, Off, NOut}};	
+handle_cast({offer_confirmed, Node}, State) ->
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	[{THad, QH, TGot, QG}] = dict:fetch(Node, Off),
+	
+	%% Update dictionaries
+	NewOff = dict:erase(Node, Off), 
+	NewShips = dict:update_counter('Cargo ship', 1, Ships),
+	NewRes = dict:update_counter(TGot, QG, Res),
+	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+	
+	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out}};
+handle_cast({offer_cancelled, Node}, State) ->
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	[{THad, QH, _, _}] = dict:fetch(Node, Off),
+	
+	%% Update dictionaries
+	NewOff = dict:erase(Node, Off), 
+	NewShips = dict:update_counter('Cargo ship', 1, Ships),
+	NewRes = dict:update_counter(THad, QH, Res),
+	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+	
+	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
