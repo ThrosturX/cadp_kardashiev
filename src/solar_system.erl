@@ -72,10 +72,10 @@ print_resources() ->
 	gen_server:call(solar_system, resources).
 
 resource_types() ->
-	['Iron', 'Food', 'Gas'].
+	["Iron", "Food", "Gas"].
 
 ship_types() ->
-	['Escort', 'Harvester', 'Cargo ship'].
+	["Escort", "Harvester", "Cargo ship"].
 
 %% Build function checks the Type of ship and 
 %% if there are enough resources to build the ship 
@@ -293,6 +293,7 @@ handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	
 	%TODO: Add request to list of trade requests in GUI
 	{Res, Ships, TradeRes, Req, Off} = State,
+	
 	Fun = fun(Old) -> Old ++ [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),	
 	
@@ -300,7 +301,10 @@ handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 %% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
+
 	%TODO: remove request to list of trade requests in GUI
+	
+
 	{noreply, State};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
