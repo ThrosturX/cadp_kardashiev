@@ -68,7 +68,8 @@ stop() ->
     gen_server:cast(?SERVER, stop).
 
 set_node_name(Name) ->
-	net_kernel:start([Name, longnames]). 
+	net_kernel:start([Name, longnames]),
+	erlang:set_cookie(node(), kaka). 
 	
 home_planet() -> 
 	io:format("Home planet~n").
