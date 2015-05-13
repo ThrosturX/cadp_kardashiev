@@ -150,7 +150,7 @@ build_process(Type) ->
 %% Building function sleeps for the time it takes to build ship of Type
 building(Type) ->
 	SType = atom_to_list(Type),
-	arbitrator:format("Building: ~p", [SType]),
+	arbitrator:format("Building: ~p~n", [SType]),
 	if
 		Type == 'Cargo hip' ->
 			randomSleep(?MIN_BUILD_TIME * ?CARGO_SHIP_FACTOR, ?MAX_BUILD_TIME * ?CARGO_SHIP_FACTOR);
@@ -164,7 +164,7 @@ building(Type) ->
 			io:format("Error in building function~n")
 	end,
 	gen_server:cast(solar_system, {building, Type}),
-	arbitrator:format("Done building: ~p", [SType]).
+	arbitrator:format("Done building: ~p~n", [SType]).
 
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
