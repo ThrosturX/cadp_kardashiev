@@ -303,7 +303,7 @@ handle_cast({Node, msg, Msg}, State) ->
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
 	{Res, Ships, TradeRes, Req, Off} = State,
-	Fun = fun(Old) -> Old ++ [{TWant, THave}] end,
+	Fun = fun(Old) -> [{TWant, THave}] ++ Old -- [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),	
 	arbitrator:update_contacts(NReq),
 	{noreply, {Res, Ships, TradeRes, NReq, Off}};
