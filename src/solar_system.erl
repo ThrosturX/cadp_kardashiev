@@ -200,6 +200,29 @@ offer(Node, TWant, QT, THave, QH) ->
 			gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
 	end.
 	
+accept_offer(Node) ->
+	% First check if resources are available
+	io:format("Are resources available?"),
+	{THave, Qty, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
+	
+	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty}),
+	if
+		Reply == noship ->
+			{ok, Reply};% TODO: Inform GUI
+		Reply == nores ->
+			{ok, Reply};% TODO: Inform GUI
+		true ->
+			io:format("Accepting offer from ~p~n", [Node]),
+			ReplyFromOther = sendWait(accept_offer, node(), Node, 5000),
+			if
+				ReplyFromOther == confirm ->
+					%sleep, need to spawn if so.
+					gen_server:cast(solar_system, {offer_confirmed, Node});
+				true ->
+					gen_server:cast(solar_system, {offer_cancelled, Node})
+			end
+	end.
+	
 spawner() -> 
 	io:format("Spawner~n").
 
@@ -300,6 +323,10 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 					{reply, nores, State}
 			end
 	end;
+handle_call({get_offer_from, Node}, _From, State) ->
+	{_, _, _, _, Off, _} = State,
+	Offer = dict:fetch(Node, Off),
+	{reply, Offer, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
@@ -353,9 +380,31 @@ handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	{noreply, {Res, Ships, TradeRes, Req, NOff, Out}};
 handle_cast({Node, outoffer, {TWant, QT, THave, QH}}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out} = State,
-	Fun = fun(_) -> {TWant, QT, THave, QH} end,
+	Fun = fun(Old) -> Old end,
 	NOut = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Out),
 	{noreply, {Res, Ships, TradeRes, Req, Off, NOut}};	
+handle_cast({offer_confirmed, Node}, State) ->
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	{THad, QH, TGot, QG} = dict:fetch(Node, Off),
+	
+	%% Update dictionaries
+	NewOff = dict:erase(Node, Off), 
+	NewShips = dict:update_counter('Cargo ship', 1, Ships),
+	NewRes = dict:update_counter(TGot, QG, Res),
+	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+	
+	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out}};
+handle_cast({offer_cancelled, Node}, State) ->
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	{THad, QH, _, _} = dict:fetch(Node, Off),
+	
+	%% Update dictionaries
+	NewOff = dict:erase(Node, Off), 
+	NewShips = dict:update_counter('Cargo ship', 1, Ships),
+	NewRes = dict:update_counter(THad, QH, Res),
+	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+	
+	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
