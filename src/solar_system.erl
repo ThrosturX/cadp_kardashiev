@@ -92,8 +92,8 @@ build(Type) ->
 					arbitrator:format("Building: ~w", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
-					io:format("Not enough resources~n"),
-					arbitrator:format("Not enough resources")
+					io:format("Not enough resources~n", []),
+					arbitrator:format("Not enough resources", [])
 			end;
 		Type == 'Harvester' ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
