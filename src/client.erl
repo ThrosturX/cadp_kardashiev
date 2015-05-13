@@ -442,12 +442,12 @@ handle_event(#wx{id = Id,
 		H = wxControlWithItems:getStringSelection(OC),
 		Q1 = wxSpinCtrl:getValue(RQC),
 		Q2 = wxSpinCtrl:getValue(OQC),
+		wxWindow:destroy(W0),
 		N = node_d(State, "Make offer:"),
 		if N =/= none, W =/= "", H =/= "" ->
 			arbitrator:offer(N, W, Q1, H, Q2);
 		true -> true
 		end,
-		wxWindow:destroy(W0),
 		{noreply, State};
 	?wxID_DELETE ->
 		W0 = wxWindow:findWindowById(?ID_OFFER_WIN),
