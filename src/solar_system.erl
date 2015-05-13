@@ -67,40 +67,40 @@ print_resources() ->
 	gen_server:call(solar_system, resources).
 
 build(Type) ->
-	io:format("Build: ~w~n", [Type]).
+	io:format("Build: ~w~n", [Type]),
 	if
 		Type == 'Death Ray' ->
-			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000});
+			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]).
+					io:format("Building: ~w~n", [Type]);
 				true ->
-					io:format("Not enough resources").
-			end
+					io:format("Not enough resources")
+			end;
 		Type == 'Harvester' ->
-			Reply = gen_server:call(solar_system, {build, 10, 10, 10});
+			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]).
+					io:format("Building: ~w~n", [Type]);
 				true ->
-					io:format("Not enough resources").
-			end
+					io:format("Not enough resources")
+			end;
 		Type == 'Cargo Ship' ->
-			Reply = gen_server:call(solar_system, {build, 30, 30, 30});
+			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]).
+					io:format("Building: ~w~n", [Type]);
 				true ->
-					io:format("Not enough resources").
-			end
+					io:format("Not enough resources")
+			end;
 		Type == 'Escort' ->
-			Reply = gen_server:call(solar_system, {build, 60, 60, 60});
+			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [Type]).
+					io:format("Building: ~w~n", [Type]);
 				true ->
-					io:format("Not enough resources").
-			end
+					io:format("Not enough resources")
+			end;
 		true ->
 			io:format("Unkown Type: ~w", [Type]),
 			false
