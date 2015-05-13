@@ -94,18 +94,13 @@ build(Type) ->
 %% if there are enough resources to build the ship 
 build_process(Type) ->
 	SType = atom_to_list(Type),
-	io:format("Build: ~p ~n", [SType]),
 	arbitrator:format("Build: ~p ~n", [SType]),
 	if
 		Type == 'Death Ray' ->
 			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~p~n", [SType]),
-					arbitrator:format("Building: ~p", [SType]),
-					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-					gen_server:cast(solar_system, {building, Type}),
-					arbitrator:format("Done building: ~p", [SType]);
+					building(SType);
 				true ->
 					io:format("Not enough resources~n", []),
 					arbitrator:receive_message("Not enough resources")
@@ -114,11 +109,7 @@ build_process(Type) ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~p~n", [SType]),
-					arbitrator:format("Building: ~p", [SType]),
-					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-					gen_server:cast(solar_system, {building, Type}),
-					arbitrator:format("Done building: ~p", [SType]);
+					building(SType);
 				true ->
 					io:format("Not enough resources~n"),
 					arbitrator:receive_message("Not enough resources")
@@ -127,11 +118,7 @@ build_process(Type) ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~p~n", [SType]),
-					arbitrator:format("Building: ~p", [SType]),
-					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-					gen_server:cast(solar_system, {building, Type}),
-					arbitrator:format("Done building: ~p", [SType]);
+					building(SType).
 				true ->
 					io:format("Not enough resources~n"),
 					arbitrator:receive_message("Not enough resources")
@@ -140,11 +127,7 @@ build_process(Type) ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~p~n", [SType]),
-					arbitrator:format("Building: ~p", [SType]),
-					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-					gen_server:cast(solar_system, {building, Type}),
-					arbitrator:format("Done building: ~p", [SType]);
+					building(SType);
 				true ->
 					io:format("Not enough resources~n"),
 					arbitrator:receive_message("Not enough resources")
@@ -154,6 +137,12 @@ build_process(Type) ->
 			arbitrator:format("Unkown Type: ~p", [SType]),
 			false
 	end.
+
+building(SType) ->
+	arbitrator:format("Building: ~p", [SType]),
+	randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
+	gen_server:cast(solar_system, {building, Type}),
+	arbitrator:format("Done building: ~p", [SType]).
 
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
