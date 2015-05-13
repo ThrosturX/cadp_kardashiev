@@ -12,6 +12,7 @@
 		display_nodes/0,
 		send/3,
 		trade_request/2,
+		cancel_request/2, 
 		offer/5,
 		build/1, 
 		ship_types/0, 
@@ -301,10 +302,7 @@ handle_cast({Node, msg, Msg}, State) ->
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
-	
-	%TODO: Add request to list of trade requests in GUI
 	{Res, Ships, TradeRes, Req, Off} = State,
-	
 	Fun = fun(Old) -> Old ++ [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),	
 	arbitrator:update_contacts(NReq),
@@ -312,8 +310,6 @@ handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 %% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
-
-	%TODO: remove request to list of trade requests in GUI
 	{Res, Ships, TradeRes, Req, Off} = State,
 	Fun = fun(Old) -> Old -- [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),
