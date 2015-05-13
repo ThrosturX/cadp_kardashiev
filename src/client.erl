@@ -20,6 +20,7 @@
 -define(ID_CARGO_SHIP, 108).
 -define(ID_ESCORT, 109).
 -define(ID_IDENTIFY, 110).
+-define(ID_OFFERS, 111).
 
 start() ->
 	start([]).
@@ -54,6 +55,8 @@ init(Options) ->
 	wxMenu:append(Mission, ?ID_TRADE, "&Trade"),
 	Comms	= wxMenu:new([]),
 	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast"),
+	wxMenu:append(Comms, ?ID_OFFERS, "&My Offers"),
+	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
 	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_CONNECT, "&Connect"),
@@ -272,6 +275,31 @@ identify_d(State) ->
 	wxDialog:destroy(Dialog),
 	Val.
 
+broadcast_d(State) -> 
+	Frame = State#state.win,
+	Resources = arbitrator:resource_types(),
+	Dialog = wxSingleChoiceDialog:new(Frame,
+									  "Requested resource:",
+									  "Broadcast demand",
+									  Resources),
+	D2     = wxSingleChoiceDialog:new(Frame,
+									  "Offered resource:",
+									  "Broadcast supply",
+									  Resources),
+	Ret = wxDialog:showModal(Dialog),
+	if Ret == ?wxID_OK ->
+		Want = wxSingleChoiceDialog:getStringSelection(Dialog),
+		R2 = wxDialog:showModal(D2),
+		if R2 == ?wxID_OK ->
+			   Have = wxSingleChoiceDialog:getStringSelection(D2);
+		true -> Have = none
+		end,
+		wxDialog:destroy(D2);
+	true -> Want = none, Have = none
+	end,
+	wxDialog:destroy(Dialog),
+	{Want, Have}.
+
 dialog_harvest_rsrc(State) -> 
 	Frame = State#state.win,
 	Resources = arbitrator:resource_types(),
@@ -332,6 +360,14 @@ handle_event(#wx{id = Id,
 		{stop, normal, State};
 	?ID_CONNECT ->
 		connect_d(State),
+		{noreply, State};
+	?ID_BROADCAST -> 
+		{W, H} = broadcast_d(State),
+		if W =/= none, H =/= none ->
+			arbitrator:request_trade(W,H),
+			format(State#state.log, "Broadcasting need for ~p, offering ~p~n", [W,H]);
+		true -> true
+		end,
 		{noreply, State};
 	?ID_IDENTIFY ->
 		Val = identify_d(State),
