@@ -344,7 +344,7 @@ handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
 	%TODO: Update offer list in GUI.
 	{Res, Ships, TradeRes, Req, Off} = State,
-	Fun = fun(_) -> {TWant, QT, THave, QH} end,
+	Fun = fun(Old) -> Old end,
 	NOff = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Off),
 	arbitrator:update_offers(NOff),
 	{noreply, {Res, Ships, TradeRes, Req, NOff}};
