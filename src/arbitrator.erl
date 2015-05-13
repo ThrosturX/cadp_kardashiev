@@ -15,17 +15,7 @@
 update_contacts(D) ->
 	Keys = dict:fetch_keys(D),
 	Result = requests_to_list(Keys, D),
-	
 	client:notify({contacts, Result}).
-	
-requests_to_list([], _) -> [];
-requests_to_list([H|T], D) ->
-	key_to_list(H, dict:fetch(H, D)) ++ requests_to_list(T, D).
-	
-key_to_list(_, []) -> [];
-key_to_list(Key, [H|T]) ->
-	{Want, Have} = H,
-	[{a2l(Key), a2l(Want), a2l(Have)}] ++ key_to_list(Key, T).
 	
 update_resources(P) -> client:notify({resources, dic_list_atom_to_string(P)}).
 update_ships(P) -> client:notify({ships, dic_list_atom_to_string(P)}).
@@ -72,3 +62,12 @@ dic_list_atom_to_string([H|L],R) ->
 	{A, B} = H,
 	H2 = {atom_to_list(A), integer_to_list(B)},
 	dic_list_atom_to_string(L, R ++ [H2] ).
+	
+requests_to_list([], _) -> [];
+requests_to_list([H|T], D) ->
+	key_to_list(H, dict:fetch(H, D)) ++ requests_to_list(T, D).
+	
+key_to_list(_, []) -> [];
+key_to_list(Key, [H|T]) ->
+	{Want, Have} = H,
+	[{a2l(Key), a2l(Want), a2l(Have)}] ++ key_to_list(Key, T).
