@@ -228,7 +228,7 @@ accept_offer(Node) ->
 			if
 				ReplyFromOther == confirm ->
 					%sleep, need to spawn if so.
-					gen_server:cast(solar_system, {offer_confirmed, Node})
+					gen_server:cast(solar_system, {offer_confirmed, Node});
 				true ->
 					gen_server:cast(solar_system, {offer_cancelled, Node})
 			end
@@ -338,7 +338,23 @@ handle_call({get_offer_from, Node}, _From, State) ->
 	{_, _, _, _, Off, _} = State,
 	[Offer] = dict:fetch(Node, Off),
 	{reply, Offer, State};
-handle_call({Node, msg, Msg}, _From, State)
+handle_call({Node, accept_offer, _Msg}, _From, State) ->
+	%% Check if the key Node exists in out offers, if so confirm trade, otherwise cancel
+	{Res, Ships, TradeRes, Req, Off, Out} = State,
+	ContainsNode = dict:is_key(Node, Out),
+	if
+		ContainsNode == true ->
+			[{TGot, QG, THad, QH}] = dict:fetch(Node, Out),
+	
+			%% Update dictionaries
+			NewOut = dict:erase(Node, Out), 
+			NewShips = dict:update_counter('Cargo ship', 1, Ships),
+			NewRes = dict:update_counter(TGot, QG, Res),
+			NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+			{reply, confirm, {NewRes, NewShips, NewTradeRes, Req, Off, NewOut}};
+		true ->
+			{reply, cancel, State}
+	end;
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
