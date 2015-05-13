@@ -16,7 +16,8 @@
 		offer/5,
 		build/1, 
 		ship_types/0, 
-		resource_types/0]).
+		resource_types/0,
+		set_node_name/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -65,6 +66,10 @@ start_link() ->
 
 stop() ->
     gen_server:cast(?SERVER, stop).
+
+set_node_name(Name) ->
+	net_kernel:start([Name, longnames]),
+	erlang:set_cookie(node(), kaka). 
 	
 home_planet() -> 
 	io:format("Home planet~n").
@@ -200,7 +205,12 @@ sendWait(Type, Msg, Node, Time) ->
 %%% gen_server callbacks
 
 init([]) -> 	
-	%The state consists of 3 dictionaries: Resources, Ships and TradeRes.
+	% The state consists of 5 dictionaries: 
+	% Resources: available resources
+	% Ships: available ships
+	% TradeRes: resources reserved for active offers
+	% Requests: Trade requests from other nodes
+	% Offers: Offers from other nodes
 	Resources = dict:from_list([{'Iron', 10}, {'Food', 10}, {'Gas', 10}]),
 	Ships = dict:from_list([{'Cargo ship', 3}, {'Harvester', 3}, {'Escort', 3}]),
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),

@@ -19,6 +19,7 @@
 -define(ID_HARVESTER, 107).
 -define(ID_CARGO_SHIP, 108).
 -define(ID_ESCORT, 109).
+-define(ID_IDENTIFY, 110).
 
 start() ->
 	start([]).
@@ -56,6 +57,7 @@ init(Options) ->
 	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
 	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_CONNECT, "&Connect"),
+	wxMenu:append(Comms, ?ID_IDENTIFY, "&Set Name"),
 	Game	= wxMenu:new([]),
 	wxMenu:append(Game, ?wxID_ABOUT, "&About"),
 	wxMenu:appendSeparator(Game),
@@ -183,10 +185,10 @@ add_message(State, M) ->
 	S = M ++ "~n",
 	format(State#state.log, S, []).
 
-update_offers(State, Contacts) ->
+update_offers(State, Offers ->
 	ListCtrl = State#state.offers,
 	wxListCtrl:deleteAllItems(ListCtrl),
-	insert_contact(ListCtrl, Contacts),
+	insert_offer(ListCtrl, Offers),
 	ListCtrl.
 
 update_ships(State, Ships) ->
@@ -207,6 +209,17 @@ update_resources(State, Resources) ->
 	wxListCtrl:deleteAllItems(ListCtrl),
 	insert_resource(ListCtrl, Resources),
 	ListCtrl.
+
+insert_offer(Ctrl, []) -> Ctrl;
+insert_offer(Ctrl, [C|T]) ->
+	{N, Q1, H, W, Q2} = C,
+	wxListCtrl:insertItem(Ctrl, 0, ""),
+	wxListCtrl:setItem(Ctrl, 0, 0, N),
+	wxListCtrl:setItem(Ctrl, 0, 1, Q1),
+	wxListCtrl:setItem(Ctrl, 0, 2, H),
+	wxListCtrl:setItem(Ctrl, 0, 3, W),
+	wxListCtrl:setItem(Ctrl, 0, 4, Q2),
+	insert_offer(Ctrl, T).
 
 insert_contact(Ctrl, []) -> Ctrl;
 insert_contact(Ctrl, [C|T]) ->
@@ -233,14 +246,31 @@ connect_d(State) ->
 								   Str,
 								   [{style, ?wxOK bor ?wxCANCEL},
 									{caption, "Connect to node"},
-									{value, "node@hostname"}]),
+									{value, "name@ip_addr"}]),
 	Ret = wxDialog:showModal(Dialog),
-	wxDialog:destroy(Dialog),
 	if Ret == ?wxID_OK ->
 		arbitrator:connect(wxTextEntryDialog:getValue(Dialog));
 	true -> true
 	end,
+	wxDialog:destroy(Dialog),
 	ok.
+
+identify_d(State) ->
+	Frame = State#state.win,
+	Str = "Set name to:",
+	Dialog = wxTextEntryDialog:new(Frame,
+								   Str,
+								   [{style, ?wxOK bor ?wxCANCEL},
+									{caption, "Set name"},
+									{value, "badname@ip_addr"}]),
+	Ret = wxDialog:showModal(Dialog),
+	if Ret == ?wxID_OK ->
+		Val = wxTextEntryDialog:getValue(Dialog),
+		arbitrator:set_node_name(Val);
+	true -> Val = none 
+	end,
+	wxDialog:destroy(Dialog),
+	Val.
 
 dialog_harvest_rsrc(State) -> 
 	Frame = State#state.win,
@@ -302,7 +332,13 @@ handle_event(#wx{id = Id,
 		{stop, normal, State};
 	?ID_CONNECT ->
 		connect_d(State),
-		format(State#state.log, "CONNECT event: #~p ~n", [Id]),
+		{noreply, State};
+	?ID_IDENTIFY ->
+		Val = identify_d(State),
+		if Val =/= none -> 
+			format(State#state.log, "You are now known as: ~p ~n", [Val]);
+		true -> true
+		end,
 		{noreply, State};
 	?ID_HARVESTER ->
 		arbitrator:build("Harvester"),
