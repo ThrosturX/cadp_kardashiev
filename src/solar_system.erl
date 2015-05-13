@@ -19,7 +19,8 @@
 		resource_types/0,
 		set_node_name/1,
 		accept_offer/1, 
-		cancel_offer/1]).
+		cancel_offer/1,
+		get_contacts/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -250,7 +251,11 @@ accept_offer(Node) ->
 					gen_server:cast(solar_system, {offer_cancelled, Node})
 			end
 	end.
-	
+
+get_contacts() ->
+	gen_server:call(solar_system, get_contacts).
+
+%% Spawns resource planets in to solar system	
 spawner() -> 
 	io:format("Spawner~n").
 
@@ -376,6 +381,10 @@ handle_call({Node, accept_offer, _Msg}, _From, State) ->
 		true ->
 			{reply, cancel, State}
 	end;
+handle_call(get_contacts, _From, State) ->
+	{_, _, _, Req, _, _} = State,
+	Contacts = dict:fetch_keys(Req),
+	{reply, Contacts, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
@@ -401,7 +410,7 @@ handle_cast({harvest, Type, Qty}, State) ->
 	{noreply, {NewRes, NewShips, Trade, Req, Off, Out}};	
 %% receives a message from another player
 handle_cast({Node, msg, Msg}, State) ->
-	io:format("!!! Private message from ~w: ~w !!!~n", [Node, Msg]),
+	arbitrator:format("!!! Private message from ~w: ~w !!!~n", [Node, Msg]),
 	{noreply, State};
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
