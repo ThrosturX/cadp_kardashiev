@@ -156,8 +156,8 @@ make_offer(State) ->
 							?wxSTAY_ON_TOP
 						}]),
 
-	Avail = ["MOCK", "CHOICES", "LOL"],
-	Owned = ["SOCK", "CHOICES", "FOO"],
+	Avail = arbitrator:resource_types(),
+	Owned = arbitrator:resource_types(),
 
 	Panel = wxPanel:new(Frame, []),
 	SuperSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -316,6 +316,24 @@ insert_resource(Ctrl, [R|T]) ->
 	wxListCtrl:setItem(Ctrl, I, 1, Q),
 	insert_resource(Ctrl, T).
 
+send_message(State, Recipient) ->
+	Frame = State#state.win,
+	Str = "Message body:",
+	Caption = io_lib:format("Send a message to ~p:", [Recipient]),
+	Dialog = wxTextEntryDialog:new(Frame,
+								   Str,
+								   [{style, ?wxOK bor ?wxCANCEL},
+									{caption, Caption},
+									{value, "Hello."}]),
+	Ret = wxDialog:showModal(Dialog),
+	if Ret == ?wxID_OK ->
+		Msg = wxTextEntryDialog:getValue(Dialog),
+		arbitrator:send_private_message(Recipient, Msg);
+	true -> true
+	end,
+	wxDialog:destroy(Dialog),
+	ok.
+
 connect_d(State) ->
 	Frame = State#state.win,
 	Str = "Connect to:",
@@ -390,12 +408,13 @@ dialog_harvest_rsrc(State) ->
 	format(State#state.log, "~p ~n", [Choice]),
 	Choice.
 
-node_d(State) -> 
+node_d(State, Str) -> 
 	Frame = State#state.win,
+	Nodes = arbitrator:get_contacts(),
 	Dialog = wxSingleChoiceDialog:new(Frame,
-									  "Make offer:",
-									  "Offer",
-									  nodes()),
+									  Str,
+									  "Contacts",
+									  Nodes),
 	Ret = wxDialog:showModal(Dialog),
 	if Ret == ?wxID_OK ->
 		Choice = wxSingleChoiceDialog:getStringSelection(Dialog);
@@ -442,8 +461,8 @@ handle_event(#wx{id = Id,
 		H = wxControlWithItems:getStringSelection(OC),
 		Q1 = wxSpinCtrl:getValue(RQC),
 		Q2 = wxSpinCtrl:getValue(OQC),
-		N = node_d(State),
-		if N =/= none, W =/= none, H =/= none ->
+		N = node_d(State, "Make offer:"),
+		if N =/= none, W =/= "", H =/= "" ->
 			arbitrator:offer(N, W, Q1, H, Q2);
 		true -> true
 		end,
@@ -492,6 +511,10 @@ handle_event(#wx{id = Id,
 			format(State#state.log, "Broadcasting need for ~p, offering ~p~n", [W,H]);
 		true -> true
 		end,
+		{noreply, State};
+	?ID_MESSAGE ->
+		N = node_d(State, "Send to:"),
+		send_message(State,N),
 		{noreply, State};
 	?ID_TRADE ->
 		make_offer(State),

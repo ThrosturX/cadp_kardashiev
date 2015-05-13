@@ -15,7 +15,8 @@
 	build/1,
 	resource_types/0,
 	ship_types/0,
-	send_private_message/2]).
+	send_private_message/2,
+	get_contacts/0]).
 
 update_contacts(D) ->
 	Keys = dict:fetch_keys(D),
@@ -48,7 +49,9 @@ connect(Node) -> solar_system:connect(l2a(Node)).
 %% Sets your node name
 set_node_name(Node) -> 	solar_system:set_node_name(l2a(Node)).
 %% Send the message Msg to Node 
-send_private_message(Node, Msg) -> solar_system:send(msg, Msg, Node).
+send_private_message(Node, Msg) -> 
+	solar_system:send(msg, Msg, Node),
+	client:notify({format, "Sent \"~p\" to ~p ~n", [Msg, Node]}).
 
 %%% Trade Section
 %% Send to all nodes request trade  
@@ -67,6 +70,9 @@ build(Type) -> solar_system:build(l2a(Type)).
 resource_types() -> solar_system:resource_types().
 %% Returns ship types
 ship_types() -> solar_system:ship_types(). 
+
+get_contacts() -> 
+	atom_list_to_string_list(solar_system:get_contacts()).
 
 %%%% Helper functions
 l2a(N) -> list_to_atom(N).
@@ -94,4 +100,8 @@ key_to_list(_, []) -> [];
 key_to_list(Key, [H|T]) ->
 	{Want, Have} = H,
 	[{a2l(Key), a2l(Want), a2l(Have)}] ++ key_to_list(Key, T).
+	
+atom_list_to_string_list([]) -> [];
+atom_list_to_string_list([H|T]) ->
+	[a2l(H)] ++ atom_list_to_string_list(T).
 	 
