@@ -44,9 +44,10 @@ die() -> client:notify(die).
 %%%% GUI to Solar System
 %% Connect to network of nodes
 connect(Node) -> solar_system:connect(l2a(Node)).
-set_node_name(Node) -> 
-	%io:format("Arbitrator set_node_name: ~p~n", [Node]),
-	solar_system:set_node_name(l2a(Node)).
+%% Sets your node name
+set_node_name(Node) -> 	solar_system:set_node_name(l2a(Node)).
+%% Send the message Msg to Node 
+send_private_message(Node, Msg) -> send(msg, Msg, Node).
 
 %%% Trade Section
 %% Send to all nodes request trade  

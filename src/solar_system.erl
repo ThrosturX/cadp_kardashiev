@@ -103,6 +103,7 @@ resource_types() ->
 ship_types() ->
 	["Escort", "Harvester", "Cargo ship"].
 
+%% This function is call by the arbitrator to build
 build(Type) ->
 	spawn(solar_system, build_process, [Type]).
 
@@ -257,7 +258,6 @@ send(Type, Msg, Node) ->
 
 sendWait(Type, Msg, Node, Time) ->	
 	gen_server:call({solar_system, Node}, {node(), Type, Msg}, Time).
-
 	
 %%% gen_server callbacks
 
@@ -371,7 +371,7 @@ handle_cast({harvest, Type, Qty}, State) ->
 	{noreply, {NewRes, NewShips, Trade, Req, Off, Out}};	
 %% receives a message from another player
 handle_cast({Node, msg, Msg}, State) ->
-	io:format("Message from ~w: ~w~n", [Node, Msg]),
+	io:format("!!! Private message from ~w: ~w !!!~n", [Node, Msg]),
 	{noreply, State};
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
