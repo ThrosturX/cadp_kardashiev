@@ -6,7 +6,8 @@
 	request_trade/2, 
 	cancel_trade/2, 
 	offer/5, 
-	harvest/1]).
+	harvest/1,
+	build/1]).
 
 update_resources(P) -> client:notify({resources, dic_list_atom_to_string(P)}).
 update_contacts(P) -> client:notify({contacts, dic_list_atom_to_string(P)}).
@@ -25,7 +26,11 @@ offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(Node, Want, WQ, Have, HQ).
 %%% Inside Solar System 
 %% Start harvesting mission of type Type
 harvest(Type) -> solar_system:harvest(Type).
+%% build ship of type Type
+build(Type) -> solar_system:build(list_to_atom(Type)).
+ 
 
+%%%% Helper functions
 dic_list_atom_to_string(L) ->
 	dic_list_atom_to_string(L,[]).
 
