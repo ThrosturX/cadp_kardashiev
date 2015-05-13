@@ -12,7 +12,8 @@
 		display_nodes/0,
 		send/3,
 		trade_request/2,
-		offer/5]).
+		offer/5,
+		build/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -75,7 +76,7 @@ build(Type) ->
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]);
 				true ->
-					io:format("Not enough resources")
+					io:format("Not enough resources~n")
 			end;
 		Type == 'Harvester' ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
@@ -83,7 +84,7 @@ build(Type) ->
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]);
 				true ->
-					io:format("Not enough resources")
+					io:format("Not enough resources~n")
 			end;
 		Type == 'Cargo Ship' ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
@@ -91,7 +92,7 @@ build(Type) ->
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]);
 				true ->
-					io:format("Not enough resources")
+					io:format("Not enough resources~n")
 			end;
 		Type == 'Escort' ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
@@ -99,10 +100,10 @@ build(Type) ->
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]);
 				true ->
-					io:format("Not enough resources")
+					io:format("Not enough resources~n")
 			end;
 		true ->
-			io:format("Unkown Type: ~w", [Type]),
+			io:format("Unkown Type: ~w~n", [Type]),
 			false
 	end.
 
