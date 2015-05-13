@@ -30,7 +30,11 @@
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
 -define(MAX_BUILD_TIME, 10000).
--define(MIN_BUILD_TIME, 4000).
+-define(MIN_BUILD_TIME, 7000).
+-define(CARGO_SHIP_FACTOR, 2).
+-define(DEATH_RAY_FACTOR,10).
+-define(ESCORT_FACTOR, 4).
+-define(HARVESTER_FACTOR, 1).
 
 random(N) ->
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
@@ -101,37 +105,41 @@ build_process(Type) ->
 			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
 			if
 				Reply == build_ok ->
-					building(SType);
+					building(Type);
 				true ->
 					io:format("Not enough resources~n", []),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:receive_message("Not enough resources"),
+					arbitrator:receive_message("Death Ray: 1000 Iron, 1000 Food, 1000 Gas")
 			end;
 		Type == 'Harvester' ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
 			if
 				Reply == build_ok ->
-					building(SType);
+					building(Type);
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:receive_message("Not enough resources"),
+					arbitrator:receive_message("Harvester: 10 Iron, 10 Food, 10 Gas")
 			end;
 		Type == 'Cargo ship' ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
-					building(SType);
+					building(Type);
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:receive_message("Not enough resources"),
+					arbitrator:receive_message("Cargo ship: 30 Iron, 30 Food, 30 Gas")
 			end;
 		Type == 'Escort' ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
 			if
 				Reply == build_ok ->
-					building(SType);
+					building(Type);
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:receive_message("Not enough resources"),
+					arbitrator:receive_message("Escort ship: 60 Iron, 60 Food, 60 Gas")
 			end;
 		true ->
 			io:format("Unkown Type: ~p~n", [SType]),
@@ -139,10 +147,23 @@ build_process(Type) ->
 			false
 	end.
 
-building(SType) ->
+%% Building function sleeps for the time it takes to build ship of Type
+building(Type) ->
+	SType = atom_to_list(Type),
 	arbitrator:format("Building: ~p", [SType]),
-	randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-	gen_server:cast(solar_system, {building, SType}),
+	if
+		Type == 'Cargo hip' ->
+			randomSleep(?MIN_BUILD_TIME * ?CARGO_SHIP_FACTOR, ?MAX_BUILD_TIME * ?CARGO_SHIP_FACTOR);
+		Type == 'Death Ray' ->
+			randomSleep(?MIN_BUILD_TIME * ?DEATH_RAY_FACTOR, ?MAX_BUILD_TIME * ?DEATH_RAY_FACTOR);
+		Type == 'Escort' ->
+			randomSleep(?MIN_BUILD_TIME * ?ESCORT_FACTOR, ?MAX_BUILD_TIME * ?ESCORT_FACTOR);
+		Type == 'Harvester' ->
+			randomSleep(?MIN_BUILD_TIME * ?HARVESTER_FACTOR, ?MAX_BUILD_TIME * ?HARVESTER_FACTOR);
+		true ->
+			io:format("Error in building function~n")
+	end,
+	gen_server:cast(solar_system, {building, Type}),
 	arbitrator:format("Done building: ~p", [SType]).
 
 % Start a harvesting operation on a location of type 'Type'
