@@ -124,7 +124,7 @@ build_process(Type) ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Escort ship: ~p Iron, ~p Food, ~p Gas~n", [?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS])
+					arbitrator:format("DEATH RAY: ~p Iron, ~p Food, ~p Gas~n", [?DEATH_RAY_IRON, ?DEATH_RAY_FOOD, ?DEATH_RAY_GAS])
 			end;
 		Type == 'Harvester' ->
 			Reply = gen_server:call(solar_system, {build, ?HARVESTER_IRON, ?HARVESTER_FOOD, ?HARVESTER_GAS}),
@@ -133,7 +133,7 @@ build_process(Type) ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Escort ship: ~p Iron, ~p Food, ~p Gas~n", [?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS])
+					arbitrator:format("Harvester: ~p Iron, ~p Food, ~p Gas~n", [?HARVESTER_IRON, ?HARVESTER_FOOD, ?HARVESTER_GAS])
 			end;
 		Type == 'Cargo ship' ->
 			Reply = gen_server:call(solar_system, {build, ?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS}),
@@ -142,7 +142,7 @@ build_process(Type) ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Escort ship: ~p Iron, ~p Food, ~p Gas~n", [?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS])
+					arbitrator:format("Cargo ship: ~p Iron, ~p Food, ~p Gas~n", [?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS])
 			end;
 		Type == 'Escort' ->
 			Reply = gen_server:call(solar_system, {build, ?ESCORT_IRON, ?ESCORT_FOOD, ?ESCORT_GAS}),
