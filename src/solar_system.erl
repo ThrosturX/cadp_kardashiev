@@ -192,8 +192,10 @@ offer(Node, TWant, QT, THave, QH) ->
 	
 accept_offer(Node) ->
 	% First check if resources are available
-	io:format("Are resources available?"),
-	{THave, Qty, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
+	io:format("Are resources available?~n"),
+	K = gen_server:call(solar_system, {get_offer_from, Node}),
+	io:format("K is : ~p~n", [K]),
+	{THave, Qty, _, _} = K,
 	
 	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty}),
 	if
@@ -314,8 +316,9 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 			end
 	end;
 handle_call({get_offer_from, Node}, _From, State) ->
+	io:format("~nHELLO ~n"),
 	{_, _, _, _, Off, _} = State,
-	Offer = dict:fetch(Node, Off),
+	[Offer] = dict:fetch(Node, Off),
 	{reply, Offer, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
