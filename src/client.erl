@@ -185,10 +185,10 @@ add_message(State, M) ->
 	S = M ++ "~n",
 	format(State#state.log, S, []).
 
-update_offers(State, Contacts) ->
+update_offers(State, Offers ->
 	ListCtrl = State#state.offers,
 	wxListCtrl:deleteAllItems(ListCtrl),
-	insert_contact(ListCtrl, Contacts),
+	insert_offer(ListCtrl, Offers),
 	ListCtrl.
 
 update_ships(State, Ships) ->
@@ -209,6 +209,17 @@ update_resources(State, Resources) ->
 	wxListCtrl:deleteAllItems(ListCtrl),
 	insert_resource(ListCtrl, Resources),
 	ListCtrl.
+
+insert_offer(Ctrl, []) -> Ctrl;
+insert_offer(Ctrl, [C|T]) ->
+	{N, Q1, H, W, Q2} = C,
+	wxListCtrl:insertItem(Ctrl, 0, ""),
+	wxListCtrl:setItem(Ctrl, 0, 0, N),
+	wxListCtrl:setItem(Ctrl, 0, 1, Q1),
+	wxListCtrl:setItem(Ctrl, 0, 2, H),
+	wxListCtrl:setItem(Ctrl, 0, 3, W),
+	wxListCtrl:setItem(Ctrl, 0, 4, Q2),
+	insert_offer(Ctrl, T).
 
 insert_contact(Ctrl, []) -> Ctrl;
 insert_contact(Ctrl, [C|T]) ->
@@ -237,11 +248,11 @@ connect_d(State) ->
 									{caption, "Connect to node"},
 									{value, "name@ip_addr"}]),
 	Ret = wxDialog:showModal(Dialog),
-	wxDialog:destroy(Dialog),
 	if Ret == ?wxID_OK ->
 		arbitrator:connect(wxTextEntryDialog:getValue(Dialog));
 	true -> true
 	end,
+	wxDialog:destroy(Dialog),
 	ok.
 
 identify_d(State) ->
@@ -253,12 +264,13 @@ identify_d(State) ->
 									{caption, "Set name"},
 									{value, "badname@ip_addr"}]),
 	Ret = wxDialog:showModal(Dialog),
-	wxDialog:destroy(Dialog),
 	if Ret == ?wxID_OK ->
-		arbitrator:set_node_name(wxTextEntryDialog:getValue(Dialog));
-	true -> true
+		Val = wxTextEntryDialog:getValue(Dialog),
+		arbitrator:set_node_name(Val);
+	true -> Val = none 
 	end,
-	ok.
+	wxDialog:destroy(Dialog),
+	Val.
 
 dialog_harvest_rsrc(State) -> 
 	Frame = State#state.win,
@@ -322,8 +334,11 @@ handle_event(#wx{id = Id,
 		connect_d(State),
 		{noreply, State};
 	?ID_IDENTIFY ->
-		identify_d(State),
-		format(State#state.log, "You are now known as: #~p ~n", [Id]),
+		Val = identify_d(State),
+		if Val =/= none -> 
+			format(State#state.log, "You are now known as: ~p ~n", [Val]);
+		true -> true
+		end,
 		{noreply, State};
 	?ID_HARVESTER ->
 		arbitrator:build("Harvester"),
