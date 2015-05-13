@@ -98,7 +98,9 @@ build(Type) ->
 				Reply == build_ok ->
 					io:format("Building: ~p~n", [SType]),
 					arbitrator:format("Building: ~p", [SType]),
-					gen_server:cast(solar_system, {building, Type});
+					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
+					gen_server:cast(solar_system, {building, Type}),
+					arbitrator:format("Done building: ~p", [SType]);
 				true ->
 					io:format("Not enough resources~n", []),
 					arbitrator:receive_message("Not enough resources")
@@ -109,7 +111,9 @@ build(Type) ->
 				Reply == build_ok ->
 					io:format("Building: ~p~n", [SType]),
 					arbitrator:format("Building: ~p", [SType]),
-					gen_server:cast(solar_system, {building, Type});
+					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
+					gen_server:cast(solar_system, {building, Type}),
+					arbitrator:format("Done building: ~p", [SType]);
 				true ->
 					io:format("Not enough resources~n"),
 					arbitrator:receive_message("Not enough resources")
@@ -120,7 +124,9 @@ build(Type) ->
 				Reply == build_ok ->
 					io:format("Building: ~p~n", [SType]),
 					arbitrator:format("Building: ~p", [SType]),
-					gen_server:cast(solar_system, {building, Type});
+					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
+					gen_server:cast(solar_system, {building, Type}),
+					arbitrator:format("Done building: ~p", [SType]);
 				true ->
 					io:format("Not enough resources~n"),
 					arbitrator:receive_message("Not enough resources")
@@ -131,7 +137,9 @@ build(Type) ->
 				Reply == build_ok ->
 					io:format("Building: ~p~n", [SType]),
 					arbitrator:format("Building: ~p", [SType]),
-					gen_server:cast(solar_system, {building, Type});
+					randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
+					gen_server:cast(solar_system, {building, Type}),
+					arbitrator:format("Done building: ~p", [SType]);
 				true ->
 					io:format("Not enough resources~n"),
 					arbitrator:receive_message("Not enough resources")
@@ -284,12 +292,11 @@ handle_call(_Msg, _From, State) ->
 
 %% Builds ship of type Type and adds it to Ships, takes random time
 handle_cast({building, Type}, State) ->
-	io:format("Cast-building: ~w~n", [Type]),
-	randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
+	%io:format("Cast-building: ~w~n", [Type]),
 	{Resources, Ships, Trade, Req, Off} = State,
 	NewShips = dict:update_counter(Type, 1, Ships),
 	arbitrator:update_ships(dict:to_list(NewShips)),
-	io:format("Cast-building: ~w - Done!~n", [Type]),
+	%io:format("Cast-building: ~w - Done!~n", [Type]),
 	{noreply, {Resources, NewShips, Trade, Req, Off}};
 %% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Type, Qty}, State) ->
