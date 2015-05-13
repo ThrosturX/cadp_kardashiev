@@ -23,6 +23,8 @@
 -define(MAX_HARVEST, 10).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
+-define(MAX_BUILD_TIME, 10000).
+-define(MIN_BUILD_TIME, 4000).
 
 random(N) ->
 	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
@@ -67,6 +69,8 @@ home_planet() ->
 print_resources() ->
 	gen_server:call(solar_system, resources).
 
+%% Build function checks the Type of ship and 
+%% if there are enough resources to build the ship 
 build(Type) ->
 	io:format("Build: ~w~n", [Type]),
 	if
@@ -186,7 +190,8 @@ init([]) ->
 	arbitrator:update_resources(dict:to_list(Resources)),
 	{ok, {Resources, Ships, TradeRes, Requests, Offers}}.
 
-%% S
+%% checks if there are enough resources if so detract from resources
+%% and reply with ok to build else reply with don't build
 handle_call({build, Iron, Food, Gas}, _From, State) ->
 	{Res, Ships, Trade, Req, Off} = State,
 	I = dict:fetch('Iron', Res),
@@ -196,7 +201,9 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 		I >= Iron andalso F >= Food andalso G >= Gas ->
 			TempRes1 = dict:update_counter('Iron', -Iron, Res),
 			TempRes2 = dict:update_counter('Food', -Food, TempRes1),
-			NewRes = dict:update_counter('Gas', -Gas, TempRes2),	
+
+			NewRes = dict:update_counter('Gas', -Gas, TempRes2),
+			arbitrator:update_resources(dict:to_list(NewRes)),
 			{reply, build_ok, {NewRes, Ships, Trade, Req, Off}};	
 		true ->
 			{reply, build_nores, State}
@@ -246,11 +253,14 @@ handle_call({reserve_resource, Type, Qty}, _From, State) ->
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
+
+%% Builds ship of type Type and adds it to Ships, takes random time
 handle_cast({building, Type}, State) ->
 	io:format("Cast-building: ~w~n", [Type]),
-	randomSleep(4000,10000),
+	randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
 	{Resources, Ships, Trade, Req, Off} = State,
 	NewShips = dict:update_counter(Type, 1, Ships),
+	arbitrator:update_ships(dict:to_list(NewShips)),
 	io:format("Cast-building: ~w - Done!~n", [Type]),
 	{noreply, {Resources, NewShips, Trade, Req, Off}};
 %% ends the harvest and increases our current resources accordingly
