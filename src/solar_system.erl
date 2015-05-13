@@ -81,55 +81,55 @@ ship_types() ->
 %% if there are enough resources to build the ship 
 build(Type) ->
 	io:format("Build: ~w~n", [Type]),
-	arbitrator:receive_message("Build: ~w", [Type]),
+	arbitrator:format("Build: ~w", [Type]),
 	if
 		Type == 'Death Ray' ->
 			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
-					arbitrator:receive_message("Building: ~w", [Type]),
+					arbitrator:format("Building: ~w", [Type]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:format("Not enough resources")
 			end;
 		Type == 'Harvester' ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
-					arbitrator:receive_message("Building: ~w", [Type]),
+					arbitrator:format("Building: ~w", [Type]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:format("Not enough resources")
 			end;
 		Type == 'Cargo ship' ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
-					arbitrator:receive_message("Building: ~w", [Type]),
+					arbitrator:format("Building: ~w", [Type]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:format("Not enough resources")
 			end;
 		Type == 'Escort' ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
-					arbitrator:receive_message("Building: ~w", [Type]),
+					arbitrator:format("Building: ~w", [Type]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:receive_message("Not enough resources")
+					arbitrator:format("Not enough resources")
 			end;
 		true ->
 			io:format("Unkown Type: ~w~n", [Type]),
-			arbitrator:receive_message("Unkown Type: ~w", [Type]),
+			arbitrator:format("Unkown Type: ~w", [Type]),
 			false
 	end.
 
