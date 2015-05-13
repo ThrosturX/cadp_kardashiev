@@ -74,13 +74,8 @@ randomSleep(N,M) ->
 	sleep(random(N,M)).
 
 % returns the resources formatted for the arbitrator
-list_resources(State) ->
-	{Res, _, _, _, _, _} = State,
-	dict:to_list(Res).
-
-list_ships(State) -> 
-	{_, Ships, _, _, _, _} = State,
-	dict:to_list(Ships).
+%list_resources(State) -> {Res, _, _, _, _, _} = State, dict:to_list(Res).
+%list_ships(State) -> {_, Ships, _, _, _, _} = State, dict:to_list(Ships).
 	
 start_link() ->
 	spawn(solar_system, spawner, []),
@@ -206,16 +201,24 @@ cancel_request(TWant, THave) ->
 %% Check if offer is possible then send offer to Node
 offer(Node, TWant, QT, THave, QH) ->
 	io:format("Offer~n"),
-	Reply = gen_server:call(solar_system, {reserve_resource, THave, QH}),
-	if 
-		Reply == noship ->
-			{ok, Reply};% TODO: Inform GUI
-		Reply == nores ->
-			{ok, Reply};% TODO: Inform GUI
+		
+	HasOffer = gen_server:call(solar_system, {have_offer_to, Node}),
+	%io:format("HasOffer: ~p~n", [HasOffer]),
+	if
+		HasOffer =/= true ->
+			Reply = gen_server:call(solar_system, {reserve_resource, THave, QH}),
+			if 
+				Reply == noship ->
+					{ok, Reply};% TODO: Inform GUI
+				Reply == nores ->
+					{ok, Reply};% TODO: Inform GUI
+				true ->
+					% TODO: Update offers in GUI.
+					send(offer, {TWant, QT, THave, QH}, Node),
+					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
+			end;
 		true ->
-			% TODO: Update offers in GUI.
-			send(offer, {TWant, QT, THave, QH}, Node),
-			gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
+			io:format("Outstanding offer to ~p present.~n", [Node])
 	end.
 	
 accept_offer(Node) ->
@@ -345,6 +348,11 @@ handle_call({get_offer_from, Node}, _From, State) ->
 	{_, _, _, _, Off, _} = State,
 	[Offer] = dict:fetch(Node, Off),
 	{reply, Offer, State};
+handle_call({have_offer_to, Node}, _From, State) ->
+	{_, _, _, _, _, Out} = State,
+	Reply = dict:is_key(Node, Out),
+	%io:format("Reply: ~p~n", [Reply]),
+	{reply, Reply, State};
 handle_call({Node, accept_offer, _Msg}, _From, State) ->
 	%% Check if the key Node exists in out offers, if so confirm trade, otherwise cancel
 	{Res, Ships, TradeRes, Req, Off, Out} = State,
