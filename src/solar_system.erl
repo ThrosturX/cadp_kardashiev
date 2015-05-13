@@ -18,7 +18,8 @@
 		build_process/1,
 		ship_types/0, 
 		resource_types/0,
-		set_node_name/1]).
+		set_node_name/1,
+		accept_offer/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -118,7 +119,7 @@ build_process(Type) ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
-					building(SType).
+					building(SType);
 				true ->
 					io:format("Not enough resources~n"),
 					arbitrator:receive_message("Not enough resources")
@@ -141,7 +142,7 @@ build_process(Type) ->
 building(SType) ->
 	arbitrator:format("Building: ~p", [SType]),
 	randomSleep(?MIN_BUILD_TIME, ?MAX_BUILD_TIME),
-	gen_server:cast(solar_system, {building, Type}),
+	gen_server:cast(solar_system, {building, SType}),
 	arbitrator:format("Done building: ~p", [SType]).
 
 % Start a harvesting operation on a location of type 'Type'
