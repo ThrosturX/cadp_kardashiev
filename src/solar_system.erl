@@ -12,6 +12,7 @@
 		display_nodes/0,
 		send/3,
 		trade_request/2,
+		cancel_request/2, 
 		offer/5,
 		build/1, 
 		ship_types/0, 
@@ -85,56 +86,56 @@ ship_types() ->
 %% if there are enough resources to build the ship 
 build(Type) ->
 	SType = atom_to_list(Type),
-	io:format("Build: ~w~n", [SType]),
-	arbitrator:format("Build: ~w", [SType]),
+	io:format("Build: ~p ~n", [SType]),
+	arbitrator:format("Build: ~p ~n", [SType]),
 	if
 		Type == 'Death Ray' ->
 			Reply = gen_server:call(solar_system, {build, 1000, 1000, 1000}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [SType]),
-					arbitrator:format("Building: ~w", [SType]),
+					io:format("Building: ~p~n", [SType]),
+					arbitrator:format("Building: ~p", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
-					io:format("Not enough resources~n"),
-					arbitrator:format("Not enough resources")
+					io:format("Not enough resources~n", []),
+					arbitrator:receive_message("Not enough resources")
 			end;
 		Type == 'Harvester' ->
 			Reply = gen_server:call(solar_system, {build, 10, 10, 10}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [SType]),
-					arbitrator:format("Building: ~w", [SType]),
+					io:format("Building: ~p~n", [SType]),
+					arbitrator:format("Building: ~p", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:format("Not enough resources")
+					arbitrator:receive_message("Not enough resources")
 			end;
 		Type == 'Cargo ship' ->
 			Reply = gen_server:call(solar_system, {build, 30, 30, 30}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [SType]),
-					arbitrator:format("Building: ~w", [SType]),
+					io:format("Building: ~p~n", [SType]),
+					arbitrator:format("Building: ~p", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:format("Not enough resources")
+					arbitrator:receive_message("Not enough resources")
 			end;
 		Type == 'Escort' ->
 			Reply = gen_server:call(solar_system, {build, 60, 60, 60}),
 			if
 				Reply == build_ok ->
-					io:format("Building: ~w~n", [SType]),
-					arbitrator:format("Building: ~w", [SType]),
+					io:format("Building: ~p~n", [SType]),
+					arbitrator:format("Building: ~p", [SType]),
 					gen_server:cast(solar_system, {building, Type});
 				true ->
 					io:format("Not enough resources~n"),
-					arbitrator:format("Not enough resources")
+					arbitrator:receive_message("Not enough resources")
 			end;
 		true ->
-			io:format("Unkown Type: ~w~n", [SType]),
-			arbitrator:format("Unkown Type: ~w", [SType]),
+			io:format("Unkown Type: ~p~n", [SType]),
+			arbitrator:format("Unkown Type: ~p", [SType]),
 			false
 	end.
 
@@ -305,22 +306,19 @@ handle_cast({Node, msg, Msg}, State) ->
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
-	
-	%TODO: Add request to list of trade requests in GUI
 	{Res, Ships, TradeRes, Req, Off} = State,
-	
-	Fun = fun(Old) -> Old ++ [{TWant, THave}] end,
+	Fun = fun(Old) -> [{TWant, THave}] ++ Old -- [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),	
 	arbitrator:update_contacts(NReq),
 	{noreply, {Res, Ships, TradeRes, NReq, Off}};
 %% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	io:format("Cancel request from ~w: ~w, ~w~n", [Node, TWant, THave]),
-
-	%TODO: remove request to list of trade requests in GUI
-	
-
-	{noreply, State};
+	{Res, Ships, TradeRes, Req, Off} = State,
+	Fun = fun(Old) -> Old -- [{TWant, THave}] end,
+	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),
+	arbitrator:update_contacts(NReq),
+	{noreply, {Res, Ships, TradeRes, NReq, Off}};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
 	%TODO: Update offer list in GUI.
