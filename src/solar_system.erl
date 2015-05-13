@@ -87,8 +87,10 @@ build(Type) ->
 			if
 				Reply == build_ok ->
 					io:format("Building: ~w~n", [Type]),
+					arbitrator:receive_message("Building Death Ray!").
 					gen_server:cast(solar_system, {building, Type});
 				true ->
+					arbitrator:receive_message("Not enough resources"),
 					io:format("Not enough resources~n")
 			end;
 		Type == 'Harvester' ->
