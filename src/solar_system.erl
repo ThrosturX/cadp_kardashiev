@@ -45,9 +45,10 @@
 -define(MIN_SPY_TIME, 2000).
 
 -define(CARGO_SHIP_FACTOR, 2).
--define(DEATH_RAY_FACTOR,10).
+-define(DEATH_RAY_FACTOR, 10).
 -define(ESCORT_FACTOR, 4).
 -define(HARVESTER_FACTOR, 1).
+-define(SPY_FACTOR, 1).
 
 -define(CARGO_SHIP_METALS, 30).
 -define(CARGO_SHIP_WATER, 30).
@@ -188,6 +189,8 @@ building(Type) ->
 			randomSleep(?MIN_BUILD_TIME * ?ESCORT_FACTOR, ?MAX_BUILD_TIME * ?ESCORT_FACTOR);
 		Type == 'Harvester' ->
 			randomSleep(?MIN_BUILD_TIME * ?HARVESTER_FACTOR, ?MAX_BUILD_TIME * ?HARVESTER_FACTOR);
+		Type == 'Spy drone' ->
+			randomSleep(?MIN_BUILD_TIME * ?SPY_FACTOR, ?MAX_BUILD_TIME * ?SPY_FACTOR);
 		true ->
 			io:format("Error in building function~n")
 	end,
@@ -369,10 +372,10 @@ init([]) ->
 	arbitrator:update_resources(dict:to_list(Resources)),
 	if ResourceType == 0 -> 
 		arbitrator:format("This solar system has ~p~n", ["Carbon"]),
-		{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, false, false}};
+		{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, DR, false}};
 	true -> 
 		arbitrator:format("This solar system has ~p~n", ["Water"]),
-		{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, false, true}}
+		{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, DR, true}}
 	end.
 
 %% checks if there are enough resources if so detract from resources
@@ -560,7 +563,7 @@ handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	Fun = fun(Old) -> Old -- [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),
 	arbitrator:update_trade_requests(NReq),
-	{noreply, {Res, Ships, TradeRes, NReq, Off, Out, Con, DR}};
+	{noreply, {Res, Ships, TradeRes, NReq, Off, Out, Con, DR, System}};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
 	%io:format("State is: ~p~n", [State]),
@@ -637,7 +640,7 @@ handle_cast(clear_trade_requests, State) ->
 	{Res, Ships, TradeRes, _, Off, Out, Con, DR, System} = State,
 	NewReq = dict:from_list([]),
 	arbitrator:update_trade_requests(NewReq),
-	{noreply, {Res, Ships, TradeRes, NewReq, Off, Out, Con, DR}};
+	{noreply, {Res, Ships, TradeRes, NewReq, Off, Out, Con, DR, System}};
 handle_cast(deathray, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	if DR == true ->
