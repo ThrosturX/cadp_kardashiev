@@ -40,9 +40,8 @@
 %% Harvest constants
 -define(MAX_HARVEST_METAL, 150).
 -define(MAX_HARVEST_RARE, 30).
--define(MAX_HARVEST, 1000).
--define(MAX_HARVEST_TIME, 4000).
--define(MIN_HARVEST_TIME, 2000).
+-define(MAX_HARVEST_TIME, 7000).
+-define(MIN_HARVEST_TIME, 3000).
 
 %% Building time constants
 -define(MAX_BUILD_TIME, 10000).
@@ -64,22 +63,22 @@
 -define(CARGO_SHIP_WATER, 2).
 -define(CARGO_SHIP_CARBON, 3).
 -define(CARGO_SHIP_CRYSTALS, 1).
--define(DEATH_RAY_METALS, 5000).
+-define(DEATH_RAY_METALS, 15000).
 -define(DEATH_RAY_WATER, 1000).
 -define(DEATH_RAY_CARBON, 1000).
 -define(DEATH_RAY_CRYSTALS, 1000).
 -define(ESCORT_METALS, 500).
 -define(ESCORT_WATER, 9).
--define(ESCORT_CARBON, 5).
--define(ESCORT_CRYSTALS, 1).
+-define(ESCORT_CARBON, 6).
+-define(ESCORT_CRYSTALS, 7).
 -define(HARVESTER_METALS, 50).
 -define(HARVESTER_WATER, 1).
 -define(HARVESTER_CARBON, 1).
--define(HARVESTER_CRYSTALS, 1).
--define(SPY_METALS, 300).
--define(SPY_WATER, 2).
--define(SPY_CARBON, 5).
--define(SPY_CRYSTALS, 1).
+-define(HARVESTER_CRYSTALS, 2).
+-define(SPY_METALS, 800).
+-define(SPY_WATER, 21).
+-define(SPY_CARBON, 24).
+-define(SPY_CRYSTALS, 23).
 
 %% Random function seeds and returns random number from 0 to N
 random(N) ->
