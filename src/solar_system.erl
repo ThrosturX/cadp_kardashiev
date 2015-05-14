@@ -138,7 +138,6 @@ build(Type) ->
 %% if there are enough resources to build the ship 
 build_process(Type) ->
 	SType = atom_to_list(Type),
-	%arbitrator:format("Build: ~p ~n", [SType]),
 	if
 		Type == 'Death Ray' ->
 			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_METALS, ?DEATH_RAY_WATER, ?DEATH_RAY_CARBON}),
@@ -187,8 +186,7 @@ build_process(Type) ->
 					arbitrator:format("Spy drone: ~p Metals, ~p Water, ~p Carbon~n", [?SPY_METALS, ?SPY_WATER, ?SPY_CARBON])
 			end;
 		true ->
-			io:format("Unkown Type: ~p~n", [SType]),
-			arbitrator:format("Unkown Type: ~p", [SType]),
+			arbitrator:format("ERROR:213 - Unkown Type: ~p", [SType]),
 			false
 	end.
 
@@ -208,7 +206,7 @@ building(Type) ->
 		Type == 'Spy drone' ->
 			randomSleep(?MIN_BUILD_TIME * ?SPY_FACTOR, ?MAX_BUILD_TIME * ?SPY_FACTOR);
 		true ->
-			io:format("Error in building function~n")
+			arbitrator:format("ERROR:214 - Unkown Type: ~p", [SType])
 	end,
 	gen_server:cast(solar_system, {building, Type}),
 	arbitrator:format("Done building: ~p~n", [SType]).
@@ -499,17 +497,18 @@ handle_call({reserve_resource, Type, Qty, NumberOfEscorts}, _From, State) ->
 					{reply, nores, State}
 			end
 	end;
+%% Returns offer from Node
 handle_call({get_offer_from, Node}, _From, State) ->
 	{_, _, _, _, Off, _, _, _, _} = State,
 	[Offer] = dict:fetch(Node, Off),
 	{reply, Offer, State};
+%% Returns true if there is an offer from Node 
 handle_call({have_offer_to, Node}, _From, State) ->
 	{_, _, _, _, _, Out, _, _, _} = State,
 	Reply = dict:is_key(Node, Out),
-	%io:format("Reply: ~p~n", [Reply]),
 	{reply, Reply, State};
+%% Check if the key Node exists in out offers, if so confirm trade, otherwise cancel 
 handle_call({Node, accept_offer, _Msg}, _From, State) ->
-	%% Check if the key Node exists in out offers, if so confirm trade, otherwise cancel
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	ContainsNode = dict:is_key(Node, Out),
 	if
@@ -526,17 +525,21 @@ handle_call({Node, accept_offer, _Msg}, _From, State) ->
 		true ->
 			{reply, cancel, State}
 	end;
+%% Returns the number of escorts you have 
 handle_call(get_number_of_escorts, _From, State) ->
 	{_, Ships, _, _, _, _, _, _, _} = State,
 	Nescorts = dict:fetch('Escort', Ships),
 	{reply, Nescorts, State};
+%% Returns all your contacts
 handle_call(get_contacts, _From, State) ->
 	{_, _, _, _, _, _, Con, _, _} = State,
 	Contacts = dict:fetch_keys(Con),
 	{reply, Contacts, State};
+%% Returns all outgoing offers
 handle_call(get_outgoing_offers, _From, State) ->
 	{_, _, _, _, _, Out, _, _, _} = State,
 	{reply, Out, State};
+%% Returns all incoming offers
 handle_call(get_incoming_offers, _From, State) ->
 	{_, _, _, _, Off, _, _, _, _} = State,
 	{reply, Off, State};
