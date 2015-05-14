@@ -35,8 +35,8 @@
 
 -define(SERVER, ?MODULE).
 
--define(MAX_HARVEST_METAL, 15).
--define(MAX_HARVEST_RARE, 3).
+-define(MAX_HARVEST_METAL, 150).
+-define(MAX_HARVEST_RARE, 30).
 -define(MAX_HARVEST, 1000).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
@@ -379,7 +379,7 @@ init([]) ->
 	% Contacts: Nodes we have made contact with
 	% DR: whether we have a death ray or not
 	% System: whether the solar system has water or carbon
-	Resources = dict:from_list([{'Metals', 10}, {'Water', 10}, {'Carbon', 10}]),
+	Resources = dict:from_list([{'Metals', 25}, {'Water', 15}, {'Carbon', 15}]),
 	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}, {'Spy drone', 0}]),
 	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
 	Requests = dict:from_list([]),
