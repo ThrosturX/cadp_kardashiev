@@ -62,18 +62,23 @@
 -define(CARGO_SHIP_METALS, 200).
 -define(CARGO_SHIP_WATER, 2).
 -define(CARGO_SHIP_CARBON, 3).
+-define(CARGO_SHIP_CRYSTALS, 1).
 -define(DEATH_RAY_METALS, 5000).
 -define(DEATH_RAY_WATER, 1000).
 -define(DEATH_RAY_CARBON, 1000).
+-define(DEATH_RAY_CRYSTALS, 1000).
 -define(ESCORT_METALS, 500).
 -define(ESCORT_WATER, 9).
 -define(ESCORT_CARBON, 5).
+-define(ESCORT_CRYSTALS, 1).
 -define(HARVESTER_METALS, 50).
 -define(HARVESTER_WATER, 1).
 -define(HARVESTER_CARBON, 1).
+-define(HARVESTER_CRYSTALS, 1).
 -define(SPY_METALS, 300).
 -define(SPY_WATER, 2).
 -define(SPY_CARBON, 5).
+-define(SPY_CRYSTALS, 1).
 
 %% Random function seeds and returns random number from 0 to N
 random(N) ->
@@ -140,50 +145,50 @@ build_process(Type) ->
 	SType = atom_to_list(Type),
 	if
 		Type == 'Death Ray' ->
-			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_METALS, ?DEATH_RAY_WATER, ?DEATH_RAY_CARBON}),
+			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_METALS, ?DEATH_RAY_WATER, ?DEATH_RAY_CARBON, ?DEATH_RAY_CRYSTALS}),
 			if
 				Reply == build_ok ->
 					building(Type),
 					arbitrator:built_death_ray();
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("DEATH RAY: ~p Metals, ~p Water, ~p Carbon~n", [?DEATH_RAY_METALS, ?DEATH_RAY_WATER, ?DEATH_RAY_CARBON])
+					arbitrator:format("DEATH RAY: ~p Metals, ~p Water, ~p Carbon, ~p Crystals~n", [?DEATH_RAY_METALS, ?DEATH_RAY_WATER, ?DEATH_RAY_CARBON, ?DEATH_RAY_CRYSTALS])
 			end;
 		Type == 'Harvester' ->
-			Reply = gen_server:call(solar_system, {build, ?HARVESTER_METALS, ?HARVESTER_WATER, ?HARVESTER_CARBON}),
+			Reply = gen_server:call(solar_system, {build, ?HARVESTER_METALS, ?HARVESTER_WATER, ?HARVESTER_CARBON, ?HARVESTER_CRYSTALS}),
 			if
 				Reply == build_ok ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Harvester: ~p Metals, ~p Water, ~p Carbon~n", [?HARVESTER_METALS, ?HARVESTER_WATER, ?HARVESTER_CARBON])
+					arbitrator:format("Harvester: ~p Metals, ~p Water, ~p Carbon, ~p Crystals~n", [?HARVESTER_METALS, ?HARVESTER_WATER, ?HARVESTER_CARBON, ?HARVESTER_CRYSTALS])
 			end;
 		Type == 'Cargo ship' ->
-			Reply = gen_server:call(solar_system, {build, ?CARGO_SHIP_METALS, ?CARGO_SHIP_WATER, ?CARGO_SHIP_CARBON}),
+			Reply = gen_server:call(solar_system, {build, ?CARGO_SHIP_METALS, ?CARGO_SHIP_WATER, ?CARGO_SHIP_CARBON, ?CARGO_SHIP_CRYSTALS}),
 			if
 				Reply == build_ok ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Cargo ship: ~p Metals, ~p Water, ~p Carbon~n", [?CARGO_SHIP_METALS, ?CARGO_SHIP_WATER, ?CARGO_SHIP_CARBON])
+					arbitrator:format("Cargo ship: ~p Metals, ~p Water, ~p Carbon, ~p Crystals~n", [?CARGO_SHIP_METALS, ?CARGO_SHIP_WATER, ?CARGO_SHIP_CARBON, ?CARGO_SHIP_CRYSTALS])
 			end;
 		Type == 'Escort' ->
-			Reply = gen_server:call(solar_system, {build, ?ESCORT_METALS, ?ESCORT_WATER, ?ESCORT_CARBON}),
+			Reply = gen_server:call(solar_system, {build, ?ESCORT_METALS, ?ESCORT_WATER, ?ESCORT_CARBON, ?ESCORT_CRYSTALS}),
 			if
 				Reply == build_ok ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Escort ship: ~p Metals, ~p Water, ~p Carbon~n", [?ESCORT_METALS, ?ESCORT_WATER, ?ESCORT_CARBON])
+					arbitrator:format("Escort ship: ~p Metals, ~p Water, ~p Carbon, ~p Crystals~n", [?ESCORT_METALS, ?ESCORT_WATER, ?ESCORT_CARBON, ?ESCORT_CRYSTALS])
 			end;
 		Type == 'Spy drone' ->
-			Reply = gen_server:call(solar_system, {build, ?SPY_METALS, ?SPY_WATER, ?SPY_CARBON}),
+			Reply = gen_server:call(solar_system, {build, ?SPY_METALS, ?SPY_WATER, ?SPY_CARBON, ?SPY_CRYSTALS}),
 			if
 				Reply == build_ok ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Spy drone: ~p Metals, ~p Water, ~p Carbon~n", [?SPY_METALS, ?SPY_WATER, ?SPY_CARBON])
+					arbitrator:format("Spy drone: ~p Metals, ~p Water, ~p Carbon, ~p Crystals~n", [?SPY_METALS, ?SPY_WATER, ?SPY_CARBON, ?SPY_CRYSTALS])
 			end;
 		true ->
 			arbitrator:format("ERROR:213 - Unkown Type: ~s", [SType]),
@@ -247,6 +252,7 @@ harvesting(Type) ->
 				gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST_RARE)})
 		end
 	end.
+
 %% Death Ray activated send to all nodes reset of resources and ships
 destroy_everything() ->
 	gen_server:cast(solar_system, deathray).
@@ -397,39 +403,48 @@ init([]) ->
 	% OutOffers: Offers to other nodes
 	% Contacts: Nodes we have made contact with
 	% DR: whether we have a death ray or not
-	% System: whether the solar system has water or carbon
-	Resources = dict:from_list([{'Metals', 25}, {'Water', 15}, {'Carbon', 15}]),
+	% System: what resources this system has
+	Resources = dict:from_list([{'Metals', 25}, {'Water', 15}, {'Carbon', 15}, {'Crystals', 10}]),
 	Ships = dict:from_list(lists:reverse([{'Cargo ship', 1}, {'Harvester', 2}, {'Escort', 0}, {'Spy drone', 0}])),
-	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
+	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}, {'Crystals', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
 	OutOffers = dict:from_list([]),
 	Contacts = dict:from_list([]),
 	DR = false,
-	ResourceType = random(0, 1),
 	arbitrator:update_ships(dict:to_list(Ships)),
 	arbitrator:update_resources(dict:to_list(Resources)),
-	if ResourceType == 0 -> 
-		arbitrator:format("This solar system has ~s~n", ["Carbon"]),
-		{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, DR, false}};
-	true -> 
-		arbitrator:format("This solar system has ~s~n", ["Water"]),
-		{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, DR, true}}
-	end.
+
+	ResourceType = random(0, 2),
+	if ResourceType == 0 ->
+		   FirstResource = 'Water',
+		   SecondResource = 'Carbon';
+	   ResourceType == 1 ->
+		   FirstResource = 'Water',
+		   SecondResource = 'Crystals';
+	   ResourceType == 2 ->
+		   FirstResource = 'Carbon',
+		   SecondResource = 'Crystals'
+	end,
+
+	arbitrator:format("This solar system contains ~s and ~s~n", [atom_to_list(FirstResource), atom_to_list(SecondResource)]),
+	{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, DR, [FirstResource, SecondResource]}}.
 
 %% checks if there are enough resources if so detract from resources
 %% and reply with ok to build else reply with don't build
-handle_call({build, Metals, Water, Carbon}, _From, State) ->
+handle_call({build, Metals, Water, Carbon, Crystals}, _From, State) ->
 	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
 	I = dict:fetch('Metals', Res),
 	F = dict:fetch('Water', Res),
 	G = dict:fetch('Carbon', Res),
+	H = dict:fetch('Crystals', Res),
 	if 
-		I >= Metals andalso F >= Water andalso G >= Carbon ->
+		I >= Metals andalso F >= Water andalso G >= Carbon  andalso H >= Crystals->
 			TempRes1 = dict:update_counter('Metals', -Metals, Res),
 			TempRes2 = dict:update_counter('Water', -Water, TempRes1),
+			TempRes3 = dict:update_counter('Crystals', -Crystals, TempRes2),
 
-			NewRes = dict:update_counter('Carbon', -Carbon, TempRes2),
+			NewRes = dict:update_counter('Carbon', -Carbon, TempRes3),
 			arbitrator:update_resources(dict:to_list(NewRes)),
 			{reply, build_ok, {NewRes, Ships, Trade, Req, Off, Out, Con, DR, System}};	
 		true ->
@@ -453,9 +468,8 @@ handle_call(print_state, _From, State) ->
 handle_call({start_harvest, Type}, _From, State) ->			
 	io:format("check if enough ships~n"),
 	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
-	if (System == false) and (Type == 'Water') or (System == true) and (Type == 'Carbon') ->
-		{reply, {badResource, Type}, State};
-	true ->
+	Pred = lists:member(Type, System),
+	if Pred; Type == 'Metals'; Type == 'Rare' ->
 		H = dict:fetch('Harvester', Ships),
 		if 
 			H == 0 -> 
@@ -465,14 +479,17 @@ handle_call({start_harvest, Type}, _From, State) ->
 					arbitrator:update_ships(dict:to_list(NewShips)),
 				io:format("Type is ~p~n", [Type]),
 				if 
+					% metals
 					Type =/= 'Rare' -> 
 						{reply, {ship, Type}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}};
-					System == true->
-						{reply, {ship, 'Water'}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}};
+					% rare resource
 					true ->
-						{reply, {ship, 'Carbon'}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}}
+						Chosen = random_member(System),
+						{reply, {ship, Chosen}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}}
 				end
-		end
+		end;
+	true ->
+		{reply, {badResource, Type}, State}
 	end;
 %% checks if the resources and ships needed for the given trade is available
 handle_call({reserve_resource, Type, Qty, NumberOfEscorts}, _From, State) ->
@@ -732,8 +749,12 @@ handle_cast(deathray, State) ->
 	end;
 handle_cast(return_drone, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
-	NewShips = dict:update_counter('Spy drone', 1, Ships),
-	arbitrator:update_ships(dict:to_list(NewShips)),
+	Drone_Broke = attacked_by_pirates(3),
+	if Drone_Broke == 0 ->
+		NewShips = dict:update_counter('Spy drone', 1, Ships),
+		arbitrator:update_ships(dict:to_list(NewShips));
+	   true -> NewShips = Ships
+	end,
 	{noreply, {Res, NewShips, TradeRes, Req, Off, Out, Con, DR, System}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
@@ -779,4 +800,8 @@ transport(Type, Qt, NumberOfEscorts) ->
 		arbitrator:format("Transport team has arrived! ~n", []),
 		gen_server:cast(solar_system, {transport_done, Type, Qt, RemainingEscorts})
 	end.
+
+random_member(L) -> 
+	Index = random:uniform(length(L)),
+	lists:nth(Index, L).
 
