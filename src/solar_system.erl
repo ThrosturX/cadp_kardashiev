@@ -31,7 +31,7 @@
 
 -define(SERVER, ?MODULE).
 
--define(MAX_HARVEST, 10).
+-define(MAX_HARVEST, 1000).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
 
@@ -458,6 +458,7 @@ handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	{noreply, {Res, Ships, TradeRes, NReq, Off, Out, Con}};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
+	io:format("State is: ~p~n", [State]),
 	%TODO: Update offer list in GUI.
 	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
 	Fun = fun(Old) -> Old end,

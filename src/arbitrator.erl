@@ -12,6 +12,7 @@
 	cancel_trade/2,
 	offer/5,
 	cancel_offer/1,
+	accept_offer/1,
 	harvest/1,
 	build/1,
 	resource_types/0,
@@ -65,6 +66,11 @@ offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), WQ, 
 
 %% Cancel offer made to Node
 cancel_offer(Node) -> solar_system:cancel_offer(l2a(Node)).
+
+%% Accept offer from Node
+accept_offer(Node) -> 
+	io:format("ARB:ARB:  ACCEPT OFFER ~p~n", [Node]),
+	solar_system:accept_offer(l2a(Node)).
 
 %%% Inside Solar System 
 %% Start harvesting mission of type Type
