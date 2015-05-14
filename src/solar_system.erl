@@ -12,7 +12,7 @@
 		send/3,
 		trade_request/2,
 		cancel_request/2, 
-		offer/5,
+		offer/6,
 		build/1, 
 		build_process/1,
 		ship_types/0, 
