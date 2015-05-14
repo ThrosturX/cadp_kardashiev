@@ -20,7 +20,7 @@
 		set_node_name/1,
 		accept_offer/2, 
 		cancel_offer/1, 
-		transport/2,
+		transport/3,
 		get_contacts/0,
 		get_outgoing_offers/0,
 		get_incoming_offers/0,
