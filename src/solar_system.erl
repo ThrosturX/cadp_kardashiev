@@ -225,7 +225,12 @@ harvest(Type) ->
 harvesting(Type) ->
 	io:format("Harvesting~n"),
 	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
-	gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST)}).
+	if
+		Type == 'Metals' ->
+			gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST_METAL)});
+		true ->
+			gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST_RARE)})
+	end.
 
 %% Death Ray activated send to all nodes reset of resources and ships
 destroy_everything() ->
