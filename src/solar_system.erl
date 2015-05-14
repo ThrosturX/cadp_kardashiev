@@ -559,11 +559,10 @@ handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	%% Update dictionaries
 	NewOff = dict:erase(Node, Off), 
 	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
-	NewShips = dict:update_counter('Escort', -NumberOfEscorts, Ships),
 
 	arbitrator:update_offers(NewOff),
 	
-	{noreply, {Res, NewShips, NewTradeRes, Req, NewOff, Out, Con, DR}};
+	{noreply, {Res, Ships, NewTradeRes, Req, NewOff, Out, Con, DR}};
 handle_cast({offer_cancelled, Node}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	[{THad, QH, _, _}] = dict:fetch(Node, Off),
