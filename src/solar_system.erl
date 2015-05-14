@@ -577,7 +577,10 @@ handle_cast(deathray, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	if DR == true ->
 		arbitrator:format("Activating Death Ray~n", []),
-		Fun = fun(N) -> send(deathray, {}, N) end,
+		Fun = fun(N) -> 
+			arbitrator:format("Terminating ~p~n", [N]),
+			send(deathray, {}, N) 
+		end,
 		lists:foreach(Fun, nodes()),
 		{noreply, {Res, Ships, TradeRes, Req, Off, Out, Con, false}};
 	true -> 
