@@ -354,6 +354,7 @@ send_spy_drone(Node) ->
 		Reply == nodrone ->
 			arbitrator:format("There are no available spy drones for this mission!~n", []);
 		true ->
+			arbitrator:format("Deploying spy drone to ~p~n", [Node]),
 			transport_delay(),
 			{Res, Ships} = sendWait(spy, [], Node, 5000),
 			transport_delay(),
