@@ -493,7 +493,7 @@ handle_call({Node, accept_offer, _Msg}, _From, State) ->
 			{reply, cancel, State}
 	end;
 handle_call(get_number_of_escorts, _From, State) ->
-	{_, Ships, _, _, _, _, _, _} = State,
+	{_, Ships, _, _, _, _, _, _, _} = State,
 	Nescorts = dict:fetch('Escort', Ships),
 	{reply, Nescorts, State};
 handle_call(get_contacts, _From, State) ->
