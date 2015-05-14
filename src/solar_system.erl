@@ -110,7 +110,7 @@ start_link() ->
 
 %% Stops the solar system Node.
 stop() ->
-    gen_server:cast(?SERVER, stop).
+	gen_server:cast(?SERVER, stop).
 
 %% Sets the name of the node.
 set_node_name(Name) ->
@@ -237,14 +237,18 @@ harvest(Type) ->
 % some time, sends the result to the server
 harvesting(Type) ->
 	io:format("Harvesting~n"),
-	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
-	if
-		Type == 'Metals' ->
-			gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST_METAL)});
+	PirateAttack = attacked_by_pirates(9),
+	if PirateAttack == 0 ->
+			gen_server:cast(solar_system, {harvest_plundered, atom_to_list(Type)});
 		true ->
-			gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST_RARE)})
+			randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
+		if
+			Type == 'Metals' ->
+				gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST_METAL)});
+			true ->
+				gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST_RARE)})
+		end
 	end.
-
 %% Death Ray activated send to all nodes reset of resources and ships
 destroy_everything() ->
 	gen_server:cast(solar_system, deathray).
@@ -381,7 +385,7 @@ sendWait(Type, Msg, Node, Time) ->
 	
 %%% gen_server callbacks
 
-init([]) -> 	
+init([]) ->		
 	% The state consists of 5 dictionaries: 
 	% Resources: available resources
 	% Ships: available ships
@@ -393,7 +397,7 @@ init([]) ->
 	% DR: whether we have a death ray or not
 	% System: whether the solar system has water or carbon
 	Resources = dict:from_list([{'Metals', 25}, {'Water', 15}, {'Carbon', 15}]),
-	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}, {'Spy drone', 0}]),
+	Ships = dict:from_list([{'Cargo ship', 1}, {'Harvester', 2}, {'Escort', 0}, {'Spy drone', 0}]),
 	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
@@ -575,6 +579,13 @@ handle_cast({building, Type}, State) ->
 		true ->
 			{noreply, {Resources, NewShips, Trade, Req, Off, Out, Con, DR, System}}
 	end;
+
+handle_cast({harvest_plundered, Type}, State) ->
+	RandLost = ["lost", "plundered", "destroyed", "hijacked"],
+	Index = random:uniform(length(RandLost)),
+	Reason = lists:nth(Index, RandLost),
+	arbitrator:format("A harvester was ~s while on a harvesting mission for ~s ~n", [Reason, Type]),
+	{noreply, State};
 %% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Type, Qty}, State) ->
 	io:format("harvest cast~n"),
@@ -686,6 +697,9 @@ handle_cast({offer_cancelled, Node}, State) ->
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con, DR, System}};
 handle_cast({transport_lost}, State) ->
 	io:format("A transport was lost."),
+	Msg = "It's been a while since a trade mission started and the cargo ship has not returned. Perhaps it has been lost?",
+	T = random(10000, 900000),
+	abritrator:lost_cargo(T, Msg),
 	{noreply, State};
 handle_cast({transport_done, Type, Qt, NumberOfEscorts}, State) ->
 	io:format("Gen_server: transport is done ~n This function should update the resources instead: ~p ~p ~n", [Type, Qt]),
