@@ -360,13 +360,6 @@ send(Type, Msg, Node) ->
 
 sendWait(Type, Msg, Node, Time) ->	
 	gen_server:call({solar_system, Node}, {node(), Type, Msg}, Time).
-
-% Waits while goods are being transported
-transport(Type, Qt) -> 
-	io:format('Currently transporting ~n'),
-	sleep(5000),
-	gen_server:cast(solar_system, {transport_done, Type, Qt}).
-
 	
 %%% gen_server callbacks
 
@@ -714,11 +707,8 @@ terminate(normal, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
-<<<<<<< HEAD
-=======
 
 transport(Type, Qt, NumberOfEscorts) -> 
 	arbitrator:format("Currently transporting ~p ~p with ~p escorts ~n", [Qt, Type, NumberOfEscorts]),
 	sleep(5000),
 	gen_server:cast(solar_system, {transport_done, Type, Qt, NumberOfEscorts}).
->>>>>>> b4cb17929216cf4f3a4b71e2632a7d2a6a7df274
