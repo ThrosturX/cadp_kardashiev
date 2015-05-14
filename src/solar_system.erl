@@ -22,7 +22,8 @@
 		cancel_offer/1, 
 		transport/0,
 		get_contacts/0,
-		get_outgoing_offers/0]).
+		get_outgoing_offers/0,
+		get_incoming_offers/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -262,6 +263,10 @@ get_contacts() ->
 %% Returns a list of offers we have made to other nodes.
 get_outgoing_offers() ->
 	gen_server:call(solar_system, get_outgoing_offers).
+	
+%% Returns a list of offers made to us.
+get_incoming_offers() ->
+	gen_server:call(solar_system, get_incoming_offers).
 
 %% Spawns resource planets in to solar system	
 spawner() -> 
@@ -405,6 +410,9 @@ handle_call(get_contacts, _From, State) ->
 handle_call(get_outgoing_offers, _From, State) ->
 	{_, _, _, _, _, Out, _} = State,
 	{reply, Out, State};
+handle_call(get_incoming_offers, _From, State) ->
+	{_, _, _, _, Off, _, _} = State,
+	{reply, Off, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 

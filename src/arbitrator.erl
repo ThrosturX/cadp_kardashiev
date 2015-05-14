@@ -18,7 +18,8 @@
 	ship_types/0,
 	send_private_message/2,
 	get_contacts/0,
-	get_outgoing_offers/0]).
+	get_outgoing_offers/0,
+	get_incoming_offers/0]).
 
 
 %%%% Solar System to GUI
@@ -86,6 +87,9 @@ get_contacts() ->
 %% Get offers we have made to other nodes.
 get_outgoing_offers() ->
 	offers_to_list(dict:to_list(solar_system:get_outgoing_offers())).
+	
+get_incoming_offers() ->
+	offers_to_list(dict:to_list(solar_system:get_incoming_offers())).
 
 %%%% Helper functions
 l2a(N) -> list_to_atom(N).
