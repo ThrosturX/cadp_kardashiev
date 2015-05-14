@@ -207,8 +207,12 @@ destroy_everything() ->
 
 %% Send to all nodes trade request
 trade_request(TWant, THave) ->
-	Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
-	lists:foreach(Fun, nodes()).	
+	IsResource = lists:member(TWant, ['Iron', 'Food', 'Gas']) and lists:member(THave, ['Iron', 'Food', 'Gas']),
+	if IsResource == true ->
+		Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
+		lists:foreach(Fun, nodes());
+	true -> arbitrator:format("Not a valid resource~n")
+	end.
 
 %% Send to all nodes cancel request	
 cancel_request(TWant, THave) ->
