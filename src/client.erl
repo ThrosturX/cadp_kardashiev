@@ -42,7 +42,7 @@ init(Options) ->
 	wx:new(Options),
 	process_flag(trap_exit, true),
 
-	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Kardashiev Client"),
+	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Kardashiev Client", [{size, {1000, 700}}]),
 	MB = wxMenuBar:new(),
 	Build	= wxMenu:new([]),
 	wxMenu:append(Build, ?ID_HARVESTER, "&Harvester"),
@@ -123,8 +123,8 @@ init(Options) ->
 		   end,
 
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
-	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 600}]),
-	wxSplitterWindow:setSashPosition(TopSplitter, 600),
+	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 470}]),
+	wxSplitterWindow:setSashGravity(TopSplitter, 0.8),
 
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
 	Watcher = whereis(refresher),
@@ -142,7 +142,6 @@ init(Options) ->
 
 	wxPanel:setSizer(MainPanel, MainSizer),
 	wxFrame:show(Frame),
-	wxSplitterWindow:setSashGravity(TopSplitter, 1.0),
 
 	{Frame, State}.
 
