@@ -751,11 +751,11 @@ transport_delay() ->
 
 attacked_by_pirates(NumberOfEscorts) ->
 	Pirates = random(0, 100),
-	Strength = random(0, 10),
+	Strength = random(0, 5),
 
 	if Pirates > 75, Strength > NumberOfEscorts ->
 		RemainingEscorts = lists:max([0, NumberOfEscorts - Strength]);
-	   Pirates > 5, Strength == NumberOfEscorts ->
+	   Pirates > 50, Strength == NumberOfEscorts; Strength == 5 ->
 		   RemainingEscorts = lists:max([0, NumberOfEscorts - 1]);
 	   true -> RemainingEscorts = NumberOfEscorts
 	end,

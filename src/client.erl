@@ -32,6 +32,8 @@
 -define(ID_BUILD_SPY, 119).
 -define(ID_BUILD_HARVESTER, 120).
 -define(ID_BUILD_CARGO_SHIP, 121).
+-define(ID_BUILD_SPY_DRONE, 122).
+-define(ID_BUILD_ESCORT, 123).
 
 -define(ID_OFFER_WIN, 200).
 -define(ID_OFFER_R, 201).
@@ -152,6 +154,8 @@ init(Options) ->
 	HarvestButtonPanelR = wxPanel:new(MainPanel, []),
 	BuildButtonPanelH = wxPanel:new(MainPanel, []),
 	BuildButtonPanelC = wxPanel:new(MainPanel, []),
+	BuildButtonPanelE = wxPanel:new(MainPanel, []),
+	BuildButtonPanelS = wxPanel:new(MainPanel, []),
 
 	wxButton:new(HarvestButtonPanelM, ?ID_HARVEST_METALS, [{label, "Metals"}]),
 	wxButton:new(HarvestButtonPanelR, ?ID_HARVEST_RARE, [{label, "Precious Materials"}]),
@@ -700,6 +704,12 @@ handle_event(#wx{id = Id,
 		{noreply, State};
 	?ID_BUILD_CARGO_SHIP -> % build a cargo ship
 		arbitrator:build("Cargo ship"),
+		{noreply, State};
+	?ID_BUILD_ESCORT -> % build a escort
+		arbitrator:build("Harvester"),
+		{noreply, State};
+	?ID_BUILD_SPY_DRONE -> % build a spy drone
+		arbitrator:build("Harvester"),
 		{noreply, State};
 	?ID_HARVEST_RARE -> % shortcut button to harvest metals
 		arbitrator:harvest("Rare"),
