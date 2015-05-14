@@ -8,6 +8,7 @@
 
 -behaviour(wx_object).
 
+% record to store "global variables"
 -record(state, {win, log, resources, contacts, ships, offers, env}).
 
 -define(ID_DEATH_RAY, 101).
@@ -26,8 +27,27 @@
 -define(ID_SPY, 114).
 -define(ID_CLEAR_REQUESTS, 115).
 -define(ID_MENUBAR, 116).
+-define(ID_HARVEST_METALS, 117).
+-define(ID_HARVEST_RARE, 118).
+-define(ID_BUILD_SPY, 119).
 
+-define(ID_OFFER_WIN, 200).
+-define(ID_OFFER_R, 201).
+-define(ID_OFFER_O, 202).
+-define(ID_OFFER_RQ, 203).
+-define(ID_OFFER_OQ, 204).
+-define(ID_ESCORT_SPIN, 205).
+-define(ID_ESCORT_SPIN2, 206).
 
+-define(ID_RETRACT, 210).
+-define(ID_CLOSE, 211).
+-define(ID_MY_OFFERS, 212).
+
+-define(ID_ACCEPT_TRADE, 220).
+-define(ID_CLOSE_TRADE, 221).
+-define(ID_ACCEPT_OFFER, 222).
+
+% wx boilerplate code...
 start() ->
 	start([]).
 
@@ -40,20 +60,25 @@ start_link() ->
 start_link(Debug) ->
 	wx_object:start_link(?MODULE, Debug, []).
 
+% print a format string message into the log/messages window
 format(Log, Str, Args) ->
 	wxTextCtrl:appendText(Log, io_lib:format(Str, Args)),
 	ok.
 
+% start wx and display the main window
 init(Options) ->
 	wx:new(Options),
 	process_flag(trap_exit, true),
 
+	% Frame is the main window
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Kardashiev Client", [{size, {1000, 700}}]),
+	% set up the menu bar and menus
 	MB = wxMenuBar:new(),
 	Build	= wxMenu:new([]),
 	wxMenu:append(Build, ?ID_HARVESTER, "&Harvester"),
 	wxMenu:append(Build, ?ID_CARGO_SHIP, "&Cargo Ship"),
 	wxMenu:append(Build, ?ID_ESCORT, "&Escort"),
+	wxMenu:append(Build, ?ID_BUILD_SPY, "&Spy Drone"),
 	wxMenu:appendSeparator(Build),
 	wxMenu:append(Build, ?ID_DEATH_RAY, "&Death Ray"),
 	Mission = wxMenu:new([]),
@@ -77,36 +102,58 @@ init(Options) ->
 	wxMenu:appendSeparator(Game),
 	wxMenu:append(Game, ?wxID_EXIT, "&Quit"),
 
+	% attach menus to the menu bar
 	wxMenuBar:append(MB, Build, "&Build"),
 	wxMenuBar:append(MB, Mission, "&Mission"),
 	wxMenuBar:append(MB, Comms, "&Communications"),
 	wxMenuBar:append(MB, Game, "&Game"),
 
+	% attach menubar to the main window
 	wxFrame:setMenuBar(Frame, MB),
 
+	% connect menu bar and close window events
 	wxFrame:connect(Frame, command_menu_selected),
 	wxFrame:connect(Frame, close_window),
 
+	% not currently in use, but can be used to display a status bar at the bottom
 	_SB = wxFrame:createStatusBar(Frame, []),
 
+	% splitters & sizers are used to format the layout
+	% Split the window into two halves, top and bottom, tables at top and message log at bottom
 	TopSplitter   = wxSplitterWindow:new(Frame, [{style, ?wxSP_NOBORDER}]),
 	MainPanel = wxPanel:new(TopSplitter, []),
-	MainSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 
 	LSizer = wxBoxSizer:new(?wxVERTICAL),
 	RSizer = wxBoxSizer:new(?wxVERTICAL),
 
+	% create list controls and put them into panels for the sizers
 	{ResourcePanel, Resources} = create_list_ctrl(MainPanel, [{0, "Resource"}, {1, "Quantity"}]),
 	{ShipPanel, Ships} = create_list_ctrl(MainPanel, [{0, "Ship"}, {1, "Quantity"}]),
 	{ContactPanel, Contacts} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Have"}, {2, "Want"}]),
 	{OfferPanel, Offers} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
 
+	% create labelled sizers to display informative names of the lists inside them
 	ResourceSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Resources"}]),
 	ShipSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Ships and Agents"}]),
 
 	ContactSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Demands"}]),
 	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Offers"}]),
+	
+	% MainPanel will hold ListSizer and ButtonSizer
+	ListSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	HarvestSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, MainPanel, [{label, "Harvest..."}]),
 
+	HarvestButtonPanelM = wxPanel:new(MainPanel, []),
+	HarvestButtonPanelR = wxPanel:new(MainPanel, []),
+
+	wxButton:new(HarvestButtonPanelM, ?ID_HARVEST_METALS, [{label, "Metals"}]),
+	wxButton:new(HarvestButtonPanelR, ?ID_HARVEST_RARE, [{label, "Precious Materials"}]),
+
+	wxWindow:connect(MainPanel, command_button_clicked),
+
+	% Connect the sizers together
 	SzOpts = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND }],
 
 	wxSizer:add(ResourceSizer, ResourcePanel, SzOpts),
@@ -120,24 +167,39 @@ init(Options) ->
 	wxSizer:add(RSizer, ContactSizer, SzOpts),
 	wxSizer:add(RSizer, OfferSizer, SzOpts),
 
-	wxSizer:add(MainSizer, LSizer, SzOpts),
-	wxSizer:add(MainSizer, RSizer, SzOpts),
+	wxSizer:add(ListSizer, LSizer, SzOpts),
+	wxSizer:add(ListSizer, RSizer, SzOpts),
 
+	wxSizer:add(HarvestSizer, HarvestButtonPanelM, SzOpts),
+	wxSizer:add(HarvestSizer, HarvestButtonPanelR, SzOpts),
+
+	wxSizer:add(ButtonSizer, HarvestSizer, SzOpts),
+
+	wxSizer:add(MainSizer, ListSizer, SzOpts),
+	wxSizer:add(MainSizer, ButtonSizer, SzOpts),
+
+	% initialize the message log with a welcome message
 	AddEvent = fun(Parent) ->
 			   EventText = wxTextCtrl:new(Parent, 
 						  ?wxID_ANY, 
 						  [{style, ?wxTE_DONTWRAP bor 
 							?wxTE_MULTILINE bor ?wxTE_READONLY}
 						  ]),
+			   % We assume the user is called Lord Quas, but hypothetically this can of course be changed later and have a user-defined or random name
 			   wxTextCtrl:appendText(EventText, "Welcome, Lord Quas.\n"),
 			   EventText
 		   end,
 
+	% create the message log window
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
-	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 470}]),
-	wxSplitterWindow:setSashGravity(TopSplitter, 0.8),
+	% split the elements of TopSplitter and keep the message log smaller
+	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 520}]),
+	wxSplitterWindow:setSashGravity(TopSplitter, 0.80),
 
+	% initialize the State record
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
+
+	% initialize the refresher, killing the old one if necessary
 	Watcher = whereis(refresher),
 	if
 		Watcher =/= undefined ->
@@ -151,6 +213,7 @@ init(Options) ->
 	Pid = spawn(client, handle_update, [State]),
 	register(refresher, Pid),
 
+	% attach the sizer settings to our main panel and display the main window
 	wxPanel:setSizer(MainPanel, MainSizer),
 	wxFrame:show(Frame),
 
@@ -158,20 +221,7 @@ init(Options) ->
 
 %% Helpers
 
--define(ID_OFFER_WIN, 200).
--define(ID_OFFER_R, 201).
--define(ID_OFFER_O, 202).
--define(ID_OFFER_RQ, 203).
--define(ID_OFFER_OQ, 204).
-
--define(ID_RETRACT, 210).
--define(ID_CLOSE, 211).
--define(ID_MY_OFFERS, 212).
-
--define(ID_ACCEPT_TRADE, 220).
--define(ID_CLOSE_TRADE, 221).
--define(ID_ACCEPT_OFFER, 222).
-
+% Trade mission functionality
 accept_offer(State) -> 
 	Frame = wxFrame:new(State#state.win, ?ID_TRADE, "Send cargo ship", 
 						[{style, 
@@ -179,8 +229,10 @@ accept_offer(State) ->
 						?wxCLOSE_BOX bor
 						?wxSTAY_ON_TOP},
 						{size, {700,400}}]),
+	% list available offers
 	Offers = arbitrator:get_incoming_offers(),
 	
+	% initialize layout
 	Panel = wxPanel:new(Frame, []),
 	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
 	
@@ -188,6 +240,11 @@ accept_offer(State) ->
 	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
 	wxWindow:setId(OfferList, ?ID_ACCEPT_OFFER), % <----------
 	insert_offer(OfferList, Offers),
+
+	EscortSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Escorts"}]),
+	SpinPanel = wxPanel:new(Panel, []),
+	Escorts = wxSpinCtrl:new(SpinPanel, [{id, ?ID_ESCORT_SPIN}]),
+	wxSpinCtrl:setRange(Escorts, 0, arbitrator:get_escorts()),
 	
 	ButtonPanel1 = wxPanel:new(Panel, []),
 	ButtonPanel2 = wxPanel:new(Panel, []),
@@ -196,20 +253,27 @@ accept_offer(State) ->
 	wxButton:new(ButtonPanel1, ?ID_ACCEPT_TRADE, [{label, "Accept Offer"}]),
 	wxButton:new(ButtonPanel2, ?ID_CLOSE_TRADE, [{label, "Close"}]),
 	
+	% connect event handlers for these buttons
 	wxWindow:connect(Panel, command_button_clicked),
 	
+	% connect sizers
 	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
 
+	wxSizer:add(EscortSizer, SpinPanel, Options),
 	wxSizer:add(OSizer, OfferPanel, Options),
+	wxSizer:add(OSizer, EscortSizer, Options),
 	wxSizer:add(BSizer, ButtonPanel1, Options),
 	wxSizer:add(BSizer, ButtonPanel2, Options),
 	wxSizer:add(Sizer, OSizer, Options),
 	wxSizer:add(Sizer, BSizer, Options),
 
+	% finalize and show
 	wxPanel:setSizer(Panel, Sizer),
 	wxFrame:center(Frame),
 	wxFrame:show(Frame). 
 
+% the next few methods are pretty much the same as accept_offer
+% cancel an outgoing offer
 cancel_offer(State) ->
 	Frame = wxFrame:new(State#state.win, ?ID_CANCEL_OFFER, "Cancel Offer",
 						[{style,
@@ -251,6 +315,7 @@ cancel_offer(State) ->
 	wxFrame:center(Frame),
 	wxFrame:show(Frame).
 
+% send an outgoing offer
 make_offer(State) ->
 	Frame = wxFrame:new(State#state.win, ?ID_OFFER_WIN, "Make Trade Offer",
 						[{style,
@@ -282,12 +347,17 @@ make_offer(State) ->
 	RQ = wxSpinCtrl:new(ReqPanel2, [{id, ?ID_OFFER_RQ}]),
 	OQ = wxSpinCtrl:new(OffPanel2, [{id, ?ID_OFFER_OQ}]),
 
+	EscortPanel = wxPanel:new(Panel, []),
+	EscortSpin = wxSpinCtrl:new(EscortPanel, [{id, ?ID_ESCORT_SPIN2}]),
+	wiSpinCtrl:setRange(EscortSpin, 0, arbitrator:get_escorts()),
+
 	wxSpinCtrl:setRange(RQ, 1, 100),
 	wxSpinCtrl:setRange(OQ, 1, 100),
 
 	CancelPanel = wxPanel:new(Panel, []),
 	ConfirmPanel = wxPanel:new(Panel, []),
 	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	EscortSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Escorts"}]),
 
 	_Cancel = wxButton:new(CancelPanel, ?wxID_DELETE, [{label, "Cancel"}]),
 	_Confirm = wxButton:new(ConfirmPanel, ?wxID_APPLY, [{label, "Confirm"}]),
@@ -295,8 +365,10 @@ make_offer(State) ->
 	wxWindow:connect(Panel, command_button_clicked),
 
 	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
+	wxSizer:add(EscortSizer, EscortPanel, Options),
 	wxSizer:add(ButtonSizer, CancelPanel, Options),
 	wxSizer:add(ButtonSizer, ConfirmPanel, Options),
+	wxSizer:add(ButtonSizer, EscortSizer, Options),
 
 	wxSizer:add(RequestSizer, ReqPanel1, Options),
 	wxSizer:add(RequestSizer, ReqPanel2, Options),
@@ -312,6 +384,7 @@ make_offer(State) ->
 	wxFrame:center(Frame),
 	wxFrame:show(Frame).
 
+% helper to create a subwindow with a panel and sizer
 create_subwindow(Parent, BoxLabel, Funs) ->
 	Panel = wxPanel:new(Parent),
 	Sz	  = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, BoxLabel}]),
@@ -321,22 +394,26 @@ create_subwindow(Parent, BoxLabel, Funs) ->
 	 || Ctrl <- Ctrls],
 	{Panel, Ctrls, Sz}.
 
+% insert columns into a list control
 cols_to_listctrl(_, []) -> ok;
 cols_to_listctrl(Ctrl, [H|T]) ->
 	{N, S} = H,
 	wxListCtrl:insertColumn(Ctrl, N, S),
 	cols_to_listctrl(Ctrl, T).
 
+% create a generic list control with the REPORT layout
 create_list_ctrl(Parent, L) ->
 	Panel = wxPanel:new(Parent, []),
 	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 150}}]),
 	cols_to_listctrl(ListCtrl, L),
 	{Panel, ListCtrl}.
 
+% add a message without formatting, automatically appending a newline
 add_message(State, M) ->
 	S = M ++ "~n",
 	format(State#state.log, S, []).
 
+% the following methods update the information tables
 update_offers(State, Offers) ->
 	ListCtrl = State#state.offers,
 	wxListCtrl:deleteAllItems(ListCtrl),
@@ -391,6 +468,7 @@ insert_resource(Ctrl, [R|T]) ->
 	wxListCtrl:setItem(Ctrl, I, 1, Q),
 	insert_resource(Ctrl, T).
 
+% send a private message to another player
 send_message(State, Recipient) ->
 	Frame = State#state.win,
 	Str = "Message body:",
@@ -401,7 +479,7 @@ send_message(State, Recipient) ->
 									{caption, Caption},
 									{value, "Hello."}]),
 	Ret = wxDialog:showModal(Dialog),
-	if Ret == ?wxID_OK ->
+	if Ret == ?wxID_OK -> % don't send messages if the user didn't press OK
 		Msg = wxTextEntryDialog:getValue(Dialog),
 		arbitrator:send_private_message(Recipient, Msg);
 	true -> true
@@ -409,6 +487,7 @@ send_message(State, Recipient) ->
 	wxDialog:destroy(Dialog),
 	ok.
 
+% connect to another node dialog
 connect_d(State) ->
 	Frame = State#state.win,
 	Str = "Connect to:",
@@ -425,6 +504,7 @@ connect_d(State) ->
 	wxDialog:destroy(Dialog),
 	ok.
 
+% set name dialog
 identify_d(State) ->
 	Frame = State#state.win,
 	Str = "Set name to:",
@@ -442,6 +522,7 @@ identify_d(State) ->
 	wxDialog:destroy(Dialog),
 	Val.
 
+% broadcast a trade request dialog
 broadcast_d(State) -> 
 	Frame = State#state.win,
 	Resources = arbitrator:resource_types(),
@@ -467,6 +548,7 @@ broadcast_d(State) ->
 	wxDialog:destroy(Dialog),
 	{Want, Have}.
 
+% select a resource to harvest dialog
 dialog_harvest_rsrc(State) -> 
 	Frame = State#state.win,
 	Resources = arbitrator:resource_types(),
@@ -483,6 +565,7 @@ dialog_harvest_rsrc(State) ->
 	%format(State#state.log, "~p ~n", [Choice]),
 	Choice.
 
+% Not currently in use due to runtime errors on Linux
 add_death_ray(_State) ->
 	ok.
 %	WMB = wxWindow:findWindowById(?ID_MENUBAR),
@@ -493,6 +576,7 @@ add_death_ray(_State) ->
 %	wxMenu:append(Menu, ?ID_ACTIVATE_RAY, "Activate &Death Ray..."),
 %	wxWindow:refresh(Menu).
 
+% utility dialog for selecting another node
 node_d(State, Str) -> 
 	Frame = State#state.win,
 	Nodes = arbitrator:get_contacts(),
@@ -519,6 +603,7 @@ handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
+% useful for debugging, but not really used
 handle_call(Msg, _From, State) ->
 	io:format("Got Call ~p~n",[Msg]),
 	{reply,ok,State}.
@@ -532,7 +617,7 @@ handle_event(#wx{id = Id,
 		event = #wxCommand{type = command_button_clicked}},
 		State = #state{}) ->
 	case Id of
-	?wxID_APPLY ->
+	?wxID_APPLY -> % user is trying to make an offer to another player
 		W0 = wxWindow:findWindowById(?ID_OFFER_WIN),
 		RR = wxWindow:findWindowById(?ID_OFFER_R),
 		OR = wxWindow:findWindowById(?ID_OFFER_O),
@@ -546,18 +631,21 @@ handle_event(#wx{id = Id,
 		H = wxControlWithItems:getStringSelection(OC),
 		Q1 = wxSpinCtrl:getValue(RQC),
 		Q2 = wxSpinCtrl:getValue(OQC),
+		EW = wxWindow:findWindowById(?ID_ESCORT_SPIN2),
+		EC = wx:typeCast(EW, wxSpinCtrl),
+		Escorts = wxSpinCtrl:getValue(EC),
 		wxWindow:destroy(W0),
 		N = node_d(State, "Make offer:"),
 		if N =/= none, N =/= [], W =/= "", H =/= "" ->
-			arbitrator:offer(N, W, Q1, H, Q2);
+			arbitrator:offer(N, W, Q1, H, Q2, Escorts);
 		true -> true
 		end,
 		{noreply, State};
-	?wxID_DELETE ->
+	?wxID_DELETE -> % user cancelled sending an offer
 		W0 = wxWindow:findWindowById(?ID_OFFER_WIN),
 		wxWindow:destroy(W0),
 		{noreply, State};
-	?ID_RETRACT ->
+	?ID_RETRACT -> % user retracted a pending offer
 		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
 		OLW = wxWindow:findWindowById(?ID_MY_OFFERS),
 		OL = wx:typeCast(OLW, wxListCtrl),
@@ -570,28 +658,37 @@ handle_event(#wx{id = Id,
 		end,
 		wxWindow:destroy(W0),
 		{noreply, State};
-	?ID_ACCEPT_TRADE ->
+	?ID_ACCEPT_TRADE -> % user accepted an offer, initiating a trade/cargo mission
 		W0 = wxWindow:findWindowById(?ID_TRADE),
 		OLW = wxWindow:findWindowById(?ID_ACCEPT_OFFER),
 		OL = wx:typeCast(OLW, wxListCtrl),
 		Sel = wxListCtrl:getNextItem(OL, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}]),
+		WS = wxWindow:findWindowById(?ID_ESCORT_SPIN),
+		Spin = wx:typeCast(WS, wxSpinCtrl),
+		Escorts = wxSpinCtrl:getValue(Spin),
 		if Sel =/= -1 ->
 			Arg = wxListCtrl:getItemText(OL, Sel),
 			format(State#state.log, "Initiating trade mission with ~p ~n", [Arg]),
-		   	arbitrator:accept_offer(Arg);
+		   	arbitrator:accept_offer(Arg, Escorts);
 		true -> true
 		end,
 		wxWindow:destroy(W0),
 		{noreply, State};
-	?ID_CLOSE_TRADE ->
+	?ID_CLOSE_TRADE -> % user closed the trade mission window
 		W0 = wxWindow:findWindowById(?ID_TRADE),
 		wxWindow:destroy(W0),
 		{noreply, State};
-	?ID_CLOSE ->
+	?ID_CLOSE -> % user closed the cancel offer window
 		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
 		wxWindow:destroy(W0),
 		{noreply, State};
-	_ ->
+	?ID_HARVEST_RARE -> % shortcut button to harvest metals
+		arbitrator:harvest("Rare"),
+		{noreply, State};
+	?ID_HARVEST_METALS -> % shortcut button to harvest metals
+		arbitrator:harvest("Metals"),
+		{noreply, State};
+	_ -> % useful for debugging
 		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
 		{noreply, State}
 	end;
@@ -599,7 +696,7 @@ handle_event(#wx{id = Id,
 		 event = #wxCommand{type = command_menu_selected}},
 		 State = #state{}) ->
 	case Id of
-	?wxID_ABOUT ->
+	?wxID_ABOUT -> % About window :)
 		AboutString = string:join(["Kardashiev Space Trading & Strategy Game.\n",
 						   "By:\n Björn Ingi Baldvinsson,\n",
 						   " Jón Reginbald,\n",
@@ -619,12 +716,12 @@ handle_event(#wx{id = Id,
 							   {caption, "About"}]),
 		wxMessageDialog:showModal(Modal),
 		{noreply, State};
-	?wxID_EXIT ->
+	?wxID_EXIT -> % quit
 		{stop, normal, State};
-	?ID_CONNECT ->
+	?ID_CONNECT -> % open connect dialog
 		connect_d(State),
 		{noreply, State};
-	?ID_BROADCAST -> 
+	?ID_BROADCAST -> % broadcast demand
 		{W, H} = broadcast_d(State),
 		if W =/= none, H =/= none ->
 			arbitrator:request_trade(W,H);
@@ -632,58 +729,70 @@ handle_event(#wx{id = Id,
 		true -> true
 		end,
 		{noreply, State};
-	?ID_MESSAGE ->
+	?ID_MESSAGE -> % send private message
 		N = node_d(State, "Send to:"),
 		if N =/= none, N =/= [] ->
 			send_message(State,N);
 		true -> true
 		end,
 		{noreply, State};
-	?ID_CANCEL_OFFER ->
+	?ID_CANCEL_OFFER -> % cancel a pending offer
 		cancel_offer(State),
 		{noreply, State};
-	?ID_SEND_OFFER ->
+	?ID_SEND_OFFER -> % send an offer
 		make_offer(State),
 		{noreply, State};
-	?ID_ACTIVATE_RAY ->
+	?ID_ACTIVATE_RAY -> % use the death ray!!
 		arbitrator:destroy_everything(),
 		{noreply, State};
-	?ID_TRADE ->
+	?ID_TRADE -> % embark on trade mission
 		accept_offer(State),
 		{noreply, State};
-	?ID_CLEAR_REQUESTS ->
+	?ID_CLEAR_REQUESTS -> % remove old demands
 		arbitrator:clear_trade_requests(),
 		{noreply, State};
-	?ID_IDENTIFY ->
+	?ID_SPY -> % send a spy drone
+		N = node_d(State, "Spy on:"),
+		if N =/= none, N =/= [] ->
+			   arbitrator:send_spy_drone(N);
+	   true -> true
+		end,
+		{noreply, State};
+	?ID_IDENTIFY -> % set your node and host name
 		Val = identify_d(State),
 		if Val =/= none -> 
 			format(State#state.log, "You are now known as: ~p ~n", [Val]);
 		true -> true
 		end,
 		{noreply, State};
-	?ID_HARVESTER ->
+	?ID_BUILD_SPY -> % build a spy drone
+		arbitrator:build("Spy drone"),
+		{noreply, State};
+	?ID_HARVESTER -> % build a harvester
 		arbitrator:build("Harvester"),
 		{noreply, State};
-	?ID_CARGO_SHIP ->
+	?ID_CARGO_SHIP -> % build a cargo ship
 		arbitrator:build("Cargo ship"),
 		{noreply, State};
-	?ID_ESCORT ->
+	?ID_ESCORT -> % build an escort
 		arbitrator:build("Escort"),
 		{noreply, State};
-	?ID_DEATH_RAY ->
+	?ID_DEATH_RAY -> % build a death ray
 		arbitrator:build("Death Ray"),
 		{noreply, State};
-	?ID_HARVEST ->
+	?ID_HARVEST -> % harvest a resource
 		Resource = dialog_harvest_rsrc(State),
 		if Resource =/= none ->
 			arbitrator:harvest(Resource);
 		true -> true
 		end,
 		{noreply, State};
+	% Useful for debugging, and unimplemented features :)
 	_ ->
 		format(State#state.log, "Unhandled event: #~p ~n", [Id]),
 		{noreply, State}
 	end;
+% We aren't using right-clicking in this game
 %handle_event(#wx{obj = Panel,
 %		event = #wxMouse{type = right_up}},
 %		State = #state{menu = Menu}) ->
@@ -706,6 +815,7 @@ terminate(_Reason, State = #state{win=Frame}) ->
 	wxFrame:destroy(Frame),
 	wx:destroy().
 
+% bridge between abritrator, uses the refresher
 handle_update(State) ->
 	Env = State#state.env,
 	wx:set_env(Env),
@@ -729,6 +839,7 @@ handle_update(State) ->
 	end,
 	handle_update(State).
 
+% bridge between refresher and client
 notify(L) ->
 	refresher ! L.
 
