@@ -25,6 +25,7 @@
 -define(ID_ACTIVATE_RAY, 113).
 -define(ID_SPY, 114).
 -define(ID_CLEAR_REQUESTS, 115).
+-define(ID_MENUBAR, 116).
 
 
 start() ->
@@ -56,21 +57,22 @@ init(Options) ->
 	wxMenu:appendSeparator(Build),
 	wxMenu:append(Build, ?ID_DEATH_RAY, "&Death Ray"),
 	Mission = wxMenu:new([]),
-	wxMenu:append(Mission, ?ID_HARVEST, "&Harvest"),
-	wxMenu:append(Mission, ?ID_TRADE, "&Trade"),
-	wxMenu:append(Mission, ?ID_SPY, "Send &Spy"),
-	wxMenu:append(Mission, ?ID_ACTIVATE_RAY, "Activate &Death Ray"),
+	wxMenu:setTitle(Mission, "Mission"),
+	wxMenu:append(Mission, ?ID_HARVEST, "&Harvest..."),
+	wxMenu:append(Mission, ?ID_TRADE, "&Trade..."),
+	wxMenu:append(Mission, ?ID_SPY, "Send &Spy..."),
+	wxMenu:append(Mission, ?ID_ACTIVATE_RAY, "Activate &Death Ray..."),
 	Comms	= wxMenu:new([]),
-	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast"),
-	wxMenu:append(Comms, ?ID_SEND_OFFER, "Send &Offer"),
-	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "&Cancel Offers"),
-	wxMenu:appendSeparator(Comms),
+	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast..."),
 	wxMenu:append(Comms, ?ID_CLEAR_REQUESTS, "Dismiss &Demands"),
 	wxMenu:appendSeparator(Comms),
-	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
+	wxMenu:append(Comms, ?ID_SEND_OFFER, "Send &Offer..."),
+	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "&Cancel Offers..."),
 	wxMenu:appendSeparator(Comms),
-	wxMenu:append(Comms, ?ID_CONNECT, "Co&nnect"),
-	wxMenu:append(Comms, ?ID_IDENTIFY, "Se&t Name"),
+	wxMenu:append(Comms, ?ID_MESSAGE, "&Message..."),
+	wxMenu:appendSeparator(Comms),
+	wxMenu:append(Comms, ?ID_CONNECT, "Co&nnect..."),
+	wxMenu:append(Comms, ?ID_IDENTIFY, "Se&t Name..."),
 	Game	= wxMenu:new([]),
 	wxMenu:append(Game, ?wxID_ABOUT, "&About"),
 	wxMenu:appendSeparator(Game),
@@ -482,6 +484,16 @@ dialog_harvest_rsrc(State) ->
 	%format(State#state.log, "~p ~n", [Choice]),
 	Choice.
 
+add_death_ray(State) ->
+	ok.
+%	WMB = wxWindow:findWindowById(?ID_MENUBAR),
+%	format(State#state.log, "WMB: ~p ~n", [WMB]),
+%	MB = wx:typeCast(WMB, wxMenuBar),
+%	format(State#state.log, "MB: ~p ~n", [MB]),
+%	Menu = wxMenuBar:findMenu(MB, "Mission"),
+%	wxMenu:append(Menu, ?ID_ACTIVATE_RAY, "Activate &Death Ray..."),
+%	wxWindow:refresh(Menu).
+
 node_d(State, Str) -> 
 	Frame = State#state.win,
 	Nodes = arbitrator:get_contacts(),
@@ -633,6 +645,9 @@ handle_event(#wx{id = Id,
 	?ID_SEND_OFFER ->
 		make_offer(State),
 		{noreply, State};
+	?ID_ACTIVATE_RAY ->
+		arbitrator:destroy_everything(),
+		{noreply, State};
 	?ID_TRADE ->
 		accept_offer(State),
 		{noreply, State};
@@ -707,6 +722,8 @@ handle_update(State) ->
 			add_message(State, M);
 		{format, S, P} ->
 			format(State#state.log, S, P);
+		{acquire, death_ray} ->
+			add_death_ray(State);
 		die ->
 			exit(ok)
 	end,
