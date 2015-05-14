@@ -546,10 +546,10 @@ handle_cast({Node, coffer, _}, State) ->
 	arbitrator:update_offers(NOff),
 	{noreply, {Res, Ships, TradeRes, Req, NOff, Out, Con, DR}};
 %% adds an outgoing offer to the list
-handle_cast({Node, outoffer, {TWant, QT, THave, QH}}, State) ->
+handle_cast({Node, outoffer, {TWant, QT, THave, QH, NumberOfEscorts}}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	Fun = fun(Old) -> Old end,
-	NOut = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Out),
+	NOut = dict:update(Node, Fun, [{TWant, QT, THave, QH, NumberOfEscorts}], Out),
 	{noreply, {Res, Ships, TradeRes, Req, Off, NOut, Con, DR}};	
 handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
