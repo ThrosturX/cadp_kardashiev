@@ -738,6 +738,13 @@ handle_event(#wx{id = Id,
 	?ID_CLEAR_REQUESTS -> % remove old demands
 		arbitrator:clear_trade_requests(),
 		{noreply, State};
+	?ID_SPY -> % send a spy drone
+		N = node_d(State, "Spy on:"),
+		if N =/= none, N =/= [] ->
+			   arbitrator:send_spy_drone(N);
+	   true -> true
+		end,
+		{noreply, State};
 	?ID_IDENTIFY -> % set your node and host name
 		Val = identify_d(State),
 		if Val =/= none -> 
