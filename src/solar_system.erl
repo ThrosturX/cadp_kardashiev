@@ -456,7 +456,7 @@ handle_call({reserve_resource, Type, Qty, NumberOfEscorts}, _From, State) ->
 				T >= Qty ->
 					NewRes = dict:update_counter(Type, -Qty, Res),
 					TempShips = dict:update_counter('Cargo ship', -1, Ships),
-					NewShips = dict:update_counter('Escort', NumberOfEscorts, TempShips),
+					NewShips = dict:update_counter('Escort', -NumberOfEscorts, TempShips),
 					NewTrade = dict:update_counter(Type, Qty, Trade),
 					arbitrator:update_resources(dict:to_list(NewRes)),
 					arbitrator:update_ships(dict:to_list(NewShips)),
