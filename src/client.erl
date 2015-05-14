@@ -57,7 +57,6 @@ init(Options) ->
 	wxMenu:appendSeparator(Build),
 	wxMenu:append(Build, ?ID_DEATH_RAY, "&Death Ray"),
 	Mission = wxMenu:new([]),
-	wxMenu:setTitle(Mission, "Mission"),
 	wxMenu:append(Mission, ?ID_HARVEST, "&Harvest..."),
 	wxMenu:append(Mission, ?ID_TRADE, "&Trade..."),
 	wxMenu:append(Mission, ?ID_SPY, "Send &Spy..."),
