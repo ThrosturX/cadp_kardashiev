@@ -211,7 +211,7 @@ trade_request(TWant, THave) ->
 	if IsResource == true ->
 		Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
 		lists:foreach(Fun, nodes());
-	true -> arbitrator:format("Not a valid resource~n")
+	true -> arbitrator:format("Not a valid resource~n", [])
 	end.
 
 %% Send to all nodes cancel request	
