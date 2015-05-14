@@ -25,7 +25,8 @@
 		get_outgoing_offers/0,
 		get_incoming_offers/0,
 		clear_trade_requests/0, 
-		destroy_everything/0]).
+		destroy_everything/0,
+		send_spy_drone/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -39,6 +40,9 @@
 
 -define(MAX_BUILD_TIME, 10000).
 -define(MIN_BUILD_TIME, 7000).
+
+-define(MAX_SPY_TIME, 5000).
+-define(MIN_SPY_TIME, 2000).
 
 -define(CARGO_SHIP_FACTOR, 2).
 -define(DEATH_RAY_FACTOR,10).
@@ -292,6 +296,22 @@ get_incoming_offers() ->
 clear_trade_requests() ->
 	gen_server:cast(solar_system, clear_trade_requests).
 	
+%% Sends spy drone to Node
+send_spy_drone(Node) ->
+	Reply = gen_server:call(solar_system, reserve_drone),
+	if
+		Reply == nodrone ->
+			arbitrator:format("There are no available spy drones for this mission!~n", []);
+		true ->
+			randomSleep(?MIN_SPY_TIME, ?MAX_SPY_TIME),
+			{Res, Ships} = sendWait(spy, [], Node, 5000),
+			randomSleep(?MIN_SPY_TIME, ?MAX_SPY_TIME),
+			arbitrator:format("~p resources: ~w~n", [Node, dict:to_list(Res)]),
+			arbitrator:format("~p ships: ~w~n", [Node, dict:to_list(Ships)]),
+			gen_server:cast(solar_system, return_drone),
+			ok
+	end.
+	
 %% Spawns resource planets in to solar system	
 spawner() -> 
 	io:format("Spawner~n").
@@ -322,7 +342,7 @@ init([]) ->
 	% OutOffers: Offers to other nodes
 	% Contacts: Nodes we have made contact with
 	Resources = dict:from_list([{'Iron', 10}, {'Food', 10}, {'Gas', 10}]),
-	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}]),
+	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}, {'Spy drone', 1}]),
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
@@ -436,6 +456,22 @@ handle_call(get_outgoing_offers, _From, State) ->
 handle_call(get_incoming_offers, _From, State) ->
 	{_, _, _, _, Off, _, _, _} = State,
 	{reply, Off, State};
+handle_call(reserve_drone, _From, State) ->
+	io:format("Reserver drone if available~n"),
+	{Res, Ships, Trade, Req, Off, Out, Con, DR} = State,
+	S = dict:fetch('Spy drone', Ships),
+	if 
+		S == 0 -> 
+			{reply, nodrone, State};
+		true -> 
+			NewShips = dict:update_counter('Spy drone', -1, Ships),
+			arbitrator:update_ships(dict:to_list(NewShips)),
+			{reply, ok, {Res, NewShips, Trade, Req, Off, Out, Con, DR}}
+	end;
+handle_call({_Node, spy, _Msg}, _From, State) ->
+	%% Check if the key Node exists in out offers, if so confirm trade, otherwise cancel
+	{Res, Ships, _, _, _, _, _, _} = State,
+	{reply, {Res, Ships}, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
@@ -588,6 +624,11 @@ handle_cast(deathray, State) ->
 		arbitrator:format("You need to build Death Ray first~n", []),
 		{noreply, State}
 	end;
+handle_cast(return_drone, State) ->
+	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
+	NewShips = dict:update_counter('Spy drone', 1, Ships),
+	arbitrator:update_ships(dict:to_list(NewShips)),
+	{noreply, {Res, NewShips, TradeRes, Req, Off, Out, Con, DR}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.

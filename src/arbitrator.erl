@@ -23,7 +23,8 @@
 	get_contacts/0,
 	get_outgoing_offers/0,
 	get_incoming_offers/0,
-	clear_trade_requests/0]).
+	clear_trade_requests/0,
+	send_spy_drone/1]).
 
 
 %%%% Solar System to GUI
@@ -97,12 +98,17 @@ get_contacts() ->
 %% Get offers we have made to other nodes.
 get_outgoing_offers() ->
 	offers_to_list(dict:to_list(solar_system:get_outgoing_offers())).
-	
+
+%% Get offers made to us.
 get_incoming_offers() ->
 	offers_to_list(dict:to_list(solar_system:get_incoming_offers())).
 
 clear_trade_requests() ->
 	solar_system:clear_trade_requests().
+
+%% Send spy drone to Node, returns Nodes status.
+send_spy_drone(Node) ->
+	solar_system:send_spy_drone(l2a(Node)).
 	
 %%%% Helper functions
 l2a(N) -> list_to_atom(N).
