@@ -473,7 +473,7 @@ insert_offer(Ctrl, [C|T]) ->
 
 insert_contact(Ctrl, []) -> Ctrl;
 insert_contact(Ctrl, [C|T]) ->
-	{N, H, W} = C,
+	{N, W, H} = C,
 	wxListCtrl:insertItem(Ctrl, 0, ""),
 	wxListCtrl:setItem(Ctrl, 0, 0, N),
 	wxListCtrl:setItem(Ctrl, 0, 1, H),
