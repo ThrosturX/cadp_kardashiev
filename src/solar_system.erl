@@ -35,24 +35,30 @@
 
 -define(SERVER, ?MODULE).
 
--define(MAX_HARVEST_METAL, 15).
--define(MAX_HARVEST_RARE, 3).
+%%% Definition of constants 
+%% Harvest constants
+-define(MAX_HARVEST_METAL, 150).
+-define(MAX_HARVEST_RARE, 30).
 -define(MAX_HARVEST, 1000).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
 
+%% Building time constants
 -define(MAX_BUILD_TIME, 10000).
 -define(MIN_BUILD_TIME, 7000).
 
+%% Transport time constants
 -define(MAX_TRANSPORT_TIME, 5000).
 -define(MIN_TRANSPORT_TIME, 2000).
 
+%% Factor constants
 -define(CARGO_SHIP_FACTOR, 2).
 -define(DEATH_RAY_FACTOR, 10).
 -define(ESCORT_FACTOR, 4).
 -define(HARVESTER_FACTOR, 1).
 -define(SPY_FACTOR, 6).
 
+%% Building constants
 -define(CARGO_SHIP_METALS, 200).
 -define(CARGO_SHIP_WATER, 2).
 -define(CARGO_SHIP_CARBON, 3).
@@ -69,12 +75,14 @@
 -define(SPY_WATER, 2).
 -define(SPY_CARBON, 5).
 
+%% Random function seeds and returns random number from 0 to N
 random(N) ->
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	%random:seed(A,B,C),
 	random:seed(now()),
 	random:uniform(N).
 
+%% Random function seeds and returns random number between N and M
 random(N,M) -> 
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	{A, B, C} = now(),
@@ -82,13 +90,16 @@ random(N,M) ->
 	%random:seed(now()),
 	N + random:uniform(M+1) - 1.
 
+%% Sleep function makes process wait for T milliseconds
 sleep(T) ->
 	receive
 	after T -> true
 	end.
 
+%% Sleeps 0 to T
 randomSleep(T) ->
 	sleep(random(T)).
+%% Sleeps N to M
 randomSleep(N,M) ->
 	sleep(random(N,M)).
 
@@ -379,7 +390,7 @@ init([]) ->
 	% Contacts: Nodes we have made contact with
 	% DR: whether we have a death ray or not
 	% System: whether the solar system has water or carbon
-	Resources = dict:from_list([{'Metals', 10}, {'Water', 10}, {'Carbon', 10}]),
+	Resources = dict:from_list([{'Metals', 25}, {'Water', 15}, {'Carbon', 15}]),
 	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}, {'Spy drone', 0}]),
 	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
 	Requests = dict:from_list([]),
@@ -742,6 +753,7 @@ transport(Type, Qt, NumberOfEscorts) ->
 		gen_server:cast(solar_system, {transport_lost});
 	   true -> 
 		transport_delay(),
+		arbitrator:format("Transport team has arrived! ~n", []),
 		gen_server:cast(solar_system, {transport_done, Type, Qt, RemainingEscorts})
 	end.
 
