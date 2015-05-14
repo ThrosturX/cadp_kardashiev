@@ -3,5 +3,5 @@ Compile: `erl -make`
 
 Run Erlang VM: `erl -pa ebin/`
 
-Start game: `solar:start().`
+Start game: `application:start(solar).`
 

@@ -20,7 +20,7 @@
 -define(ID_CARGO_SHIP, 108).
 -define(ID_ESCORT, 109).
 -define(ID_IDENTIFY, 110).
--define(ID_OFFERS, 111).
+-define(ID_CANCEL_OFFER, 111).
 
 start() ->
 	start([]).
@@ -55,7 +55,7 @@ init(Options) ->
 	wxMenu:append(Mission, ?ID_TRADE, "&Trade"),
 	Comms	= wxMenu:new([]),
 	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast"),
-	wxMenu:append(Comms, ?ID_OFFERS, "&My Offers"),
+	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "Cancel &Offers"),
 	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
 	wxMenu:appendSeparator(Comms),
@@ -124,7 +124,7 @@ init(Options) ->
 
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
 	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 600}]),
-
+	wxSplitterWindow:setSashPosition(TopSplitter, 600),
 
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
 	Watcher = whereis(refresher),
@@ -142,6 +142,7 @@ init(Options) ->
 
 	wxPanel:setSizer(MainPanel, MainSizer),
 	wxFrame:show(Frame),
+	wxSplitterWindow:setSashGravity(TopSplitter, 1.0),
 
 	{Frame, State}.
 
@@ -152,6 +153,51 @@ init(Options) ->
 -define(ID_OFFER_O, 202).
 -define(ID_OFFER_RQ, 203).
 -define(ID_OFFER_OQ, 204).
+
+-define(ID_RETRACT, 210).
+-define(ID_CLOSE, 211).
+-define(ID_MY_OFFERS, 212).
+
+cancel_offer(State) ->
+	Frame = wxFrame:new(State#state.win, ?ID_CANCEL_OFFER, "Cancel Offer",
+						[{style,
+						  ?wxCAPTION bor
+						  ?wxCLOSE_BOX bor
+						  ?wxSTAY_ON_TOP
+						 },
+						 {size, {700, 400}
+						 }]),
+
+	Offers = arbitrator:get_outgoing_offers(),
+
+	Panel = wxPanel:new(Frame, []),
+	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
+	
+	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Outgoing Offers"}]),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	wxWindow:setId(OfferList, ?ID_MY_OFFERS),
+	insert_offer(OfferList, Offers),
+
+	ButtonPanel1 = wxPanel:new(Panel, []),
+	ButtonPanel2 = wxPanel:new(Panel, []),
+
+	BSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxButton:new(ButtonPanel1, ?ID_RETRACT, [{label, "Retract Offer"}]),
+	wxButton:new(ButtonPanel2, ?ID_CLOSE, [{label, "Close"}]),
+
+	wxWindow:connect(Panel, command_button_clicked),
+
+	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
+
+	wxSizer:add(OSizer, OfferPanel, Options),
+	wxSizer:add(BSizer, ButtonPanel1, Options),
+	wxSizer:add(BSizer, ButtonPanel2, Options),
+	wxSizer:add(Sizer, OSizer, Options),
+	wxSizer:add(Sizer, BSizer, Options),
+
+	wxPanel:setSizer(Panel, Sizer),
+	wxFrame:center(Frame),
+	wxFrame:show(Frame).
 
 make_offer(State) ->
 	Frame = wxFrame:new(State#state.win, ?ID_OFFER_WIN, "Make Trade Offer",
@@ -167,13 +213,10 @@ make_offer(State) ->
 	Panel = wxPanel:new(Frame, []),
 	SuperSizer = wxBoxSizer:new(?wxVERTICAL),
 	MainSizer = wxBoxSizer:new(?wxHORIZONTAL),
-	RequestSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Panel,
+	RequestSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel,
 										[{label, "Request"}]),
-	OfferSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Panel,
+	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel,
 										[{label, "Offer"}]),
-
-	ReqSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel),
-	OffSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel),
 
 	ReqPanel1 = wxPanel:new(Panel, []),
 	OffPanel1 = wxPanel:new(Panel, []),
@@ -202,13 +245,11 @@ make_offer(State) ->
 	wxSizer:add(ButtonSizer, CancelPanel, Options),
 	wxSizer:add(ButtonSizer, ConfirmPanel, Options),
 
-	wxSizer:add(ReqSizer, ReqPanel1, Options),
-	wxSizer:add(ReqSizer, ReqPanel2, Options),
-	wxSizer:add(OffSizer, OffPanel1, Options),
-	wxSizer:add(OffSizer, OffPanel2, Options),
+	wxSizer:add(RequestSizer, ReqPanel1, Options),
+	wxSizer:add(RequestSizer, ReqPanel2, Options),
+	wxSizer:add(OfferSizer, OffPanel1, Options),
+	wxSizer:add(OfferSizer, OffPanel2, Options),
 
-	wxSizer:add(RequestSizer, ReqSizer, Options),
-	wxSizer:add(OfferSizer, OffSizer, Options),
 	wxSizer:add(MainSizer, RequestSizer, Options),
 	wxSizer:add(MainSizer, OfferSizer, Options),
 	wxSizer:add(SuperSizer, MainSizer, Options),
@@ -235,7 +276,7 @@ cols_to_listctrl(Ctrl, [H|T]) ->
 
 create_list_ctrl(Parent, L) ->
 	Panel = wxPanel:new(Parent, []),
-	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 300}}]),
+	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 150}}]),
 	cols_to_listctrl(ListCtrl, L),
 	{Panel, ListCtrl}.
 
@@ -444,13 +485,29 @@ handle_event(#wx{id = Id,
 		Q2 = wxSpinCtrl:getValue(OQC),
 		wxWindow:destroy(W0),
 		N = node_d(State, "Make offer:"),
-		if N =/= none, W =/= "", H =/= "" ->
+		if N =/= none, N =/= [], W =/= "", H =/= "" ->
 			arbitrator:offer(N, W, Q1, H, Q2);
 		true -> true
 		end,
 		{noreply, State};
 	?wxID_DELETE ->
 		W0 = wxWindow:findWindowById(?ID_OFFER_WIN),
+		wxWindow:destroy(W0),
+		{noreply, State};
+	?ID_RETRACT ->
+		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
+		OLW = wxWindow:findWindowById(?ID_MY_OFFERS),
+		OL = wx:typeCast(OLW, wxListCtrl),
+		Sel = wxListCtrl:getNextItem(OL, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}]),
+		if Sel =/= -1 ->
+			Arg = wxListCtrl:getItemText(OL, Sel),
+			format(State#state.log, "Selection: ~p ~n", [Arg]);
+		true -> true
+		end,
+		wxWindow:destroy(W0),
+		{noreply, State};
+	?ID_CLOSE ->
+		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
 		wxWindow:destroy(W0),
 		{noreply, State};
 	_ ->
@@ -495,7 +552,13 @@ handle_event(#wx{id = Id,
 		{noreply, State};
 	?ID_MESSAGE ->
 		N = node_d(State, "Send to:"),
-		send_message(State,N),
+		if N =/= none, N =/= [] ->
+			send_message(State,N);
+		true -> true
+		end,
+		{noreply, State};
+	?ID_CANCEL_OFFER ->
+		cancel_offer(State),
 		{noreply, State};
 	?ID_TRADE ->
 		make_offer(State),
@@ -530,6 +593,12 @@ handle_event(#wx{id = Id,
 		format(State#state.log, "Unhandled event: #~p ~n", [Id]),
 		{noreply, State}
 	end;
+%handle_event(#wx{obj = Panel,
+%		event = #wxMouse{type = right_up}},
+%		State = #state{menu = Menu}) ->
+	%% Open the popup menu
+%	wxWindow:popupMenu(Panel, Menu),
+%	{noreply, State};
 handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
 	io:format("~p Closing window ~n",[self()]),
 	ok = wxFrame:setStatusText(Frame, "Closing...",[]),
