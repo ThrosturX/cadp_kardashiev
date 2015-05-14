@@ -461,6 +461,7 @@ handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	{noreply, {Res, Ships, TradeRes, NReq, Off, Out, Con}};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
+	io:format("State is: ~p~n", [State]),
 	%TODO: Update offer list in GUI.
 	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
 	Fun = fun(Old) -> Old end,
@@ -531,7 +532,7 @@ handle_cast({offer_cancelled, Node}, State) ->
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con}};
 handle_cast({transport_done}, State) ->
 	io:format("Gen_server: transport is done ~n"),
-	{noreply, {State}};
+	{noreply, State};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
