@@ -52,7 +52,7 @@ built_death_ray() -> client:notify({acquire, death_ray}).
 
 %% Notify about lost cargo
 lost_cargo(T, Msg) -> 
-	spawn(arbitrator, timednotify, [T, Msg]).
+	spawn(arbitrator, timed_notify, [T, Msg]).
 
 timed_notify(T, Msg) ->
 	receive after T -> true
