@@ -111,7 +111,7 @@ build(Type) ->
 %% if there are enough resources to build the ship 
 build_process(Type) ->
 	SType = atom_to_list(Type),
-	arbitrator:format("Build: ~p ~n", [SType]),
+	%arbitrator:format("Build: ~p ~n", [SType]),
 	if
 		Type == 'Death Ray' ->
 			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_IRON, ?DEATH_RAY_FOOD, ?DEATH_RAY_GAS}),
