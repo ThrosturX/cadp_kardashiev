@@ -489,8 +489,8 @@ handle_call(get_incoming_offers, _From, State) ->
 	{_, _, _, _, Off, _, _, _, _} = State,
 	{reply, Off, State};
 handle_call(reserve_drone, _From, State) ->
-	io:format("Reserver drone if available~n"),
-	{Res, Ships, Trade, Req, Off, Out, Con, DR} = State,
+	io:format("Reserve drone if available~n"),
+	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
 	S = dict:fetch('Spy drone', Ships),
 	if 
 		S == 0 -> 
@@ -498,11 +498,11 @@ handle_call(reserve_drone, _From, State) ->
 		true -> 
 			NewShips = dict:update_counter('Spy drone', -1, Ships),
 			arbitrator:update_ships(dict:to_list(NewShips)),
-			{reply, ok, {Res, NewShips, Trade, Req, Off, Out, Con, DR}}
+			{reply, ok, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}}
 	end;
 handle_call({_Node, spy, _Msg}, _From, State) ->
 	%% Check if the key Node exists in out offers, if so confirm trade, otherwise cancel
-	{Res, Ships, _, _, _, _, _, _} = State,
+	{Res, Ships, _, _, _, _, _, _, _} = State,
 	{reply, {Res, Ships}, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
@@ -658,10 +658,10 @@ handle_cast(deathray, State) ->
 		{noreply, State}
 	end;
 handle_cast(return_drone, State) ->
-	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
+	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	NewShips = dict:update_counter('Spy drone', 1, Ships),
 	arbitrator:update_ships(dict:to_list(NewShips)),
-	{noreply, {Res, NewShips, TradeRes, Req, Off, Out, Con, DR}};
+	{noreply, {Res, NewShips, TradeRes, Req, Off, Out, Con, DR, System}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
