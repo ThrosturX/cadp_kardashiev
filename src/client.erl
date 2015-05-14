@@ -21,6 +21,8 @@
 -define(ID_ESCORT, 109).
 -define(ID_IDENTIFY, 110).
 -define(ID_CANCEL_OFFER, 111).
+-define(ID_SEND_OFFER, 112).
+
 
 start() ->
 	start([]).
@@ -55,11 +57,12 @@ init(Options) ->
 	wxMenu:append(Mission, ?ID_TRADE, "&Trade"),
 	Comms	= wxMenu:new([]),
 	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast"),
-	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "Cancel &Offers"),
+	wxMenu:append(Comms, ?ID_SEND_OFFER, "Send &Offer"),
+	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "&Cancel Offers"),
 	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
 	wxMenu:appendSeparator(Comms),
-	wxMenu:append(Comms, ?ID_CONNECT, "&Connect"),
+	wxMenu:append(Comms, ?ID_CONNECT, "Co&nnect"),
 	wxMenu:append(Comms, ?ID_IDENTIFY, "&Set Name"),
 	Game	= wxMenu:new([]),
 	wxMenu:append(Game, ?wxID_ABOUT, "&About"),
@@ -156,6 +159,46 @@ init(Options) ->
 -define(ID_RETRACT, 210).
 -define(ID_CLOSE, 211).
 -define(ID_MY_OFFERS, 212).
+
+-define(ID_ACCEPT_OFFER, 213)
+
+accept_offer(State) -> 
+	Frame = wxFrame:new(State#state.win, ?ID_TRADE, "Send cargo ship", 
+						[{style, 
+						?wxCAPTION bor
+						?wxCLODE_BOX bor
+						?wxSTAY_ON_TOP},
+						{size, {700,400}}]),
+	Offers = arbitrator:get_incoming_offers(),
+	
+	Panel = wxPanel:new(Frame, []),
+	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
+	
+	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Incoming Offers"}]),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	wxWindow:setId(OfferList, ?ID_ACCEPT_OFFER), % <----------
+	insert_offer(OfferList, Offers),
+	
+	ButtonPanel1 = wxPanel:new(Panel, []),
+	ButtonPanel2 = wxPanel:new(Panel, []),
+
+	BSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxButton:new(ButtonPanel1, ?ID_RETRACT, [{label, "Accept Offer"}]),
+	wxButton:new(ButtonPanel2, ?ID_CLOSE, [{label, "Close"}]),
+	
+	wxWindow:connect(Panel, command_button_clicked),
+	
+	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
+
+	wxSizer:add(OSizer, OfferPanel, Options),
+	wxSizer:add(BSizer, ButtonPanel1, Options),
+	wxSizer:add(BSizer, ButtonPanel2, Options),
+	wxSizer:add(Sizer, OSizer, Options),
+	wxSizer:add(Sizer, BSizer, Options),
+
+	wxPanel:setSizer(Panel, Sizer),
+	wxFrame:center(Frame),
+	wxFrame:show(Frame). 
 
 cancel_offer(State) ->
 	Frame = wxFrame:new(State#state.win, ?ID_CANCEL_OFFER, "Cancel Offer",
@@ -560,8 +603,11 @@ handle_event(#wx{id = Id,
 	?ID_CANCEL_OFFER ->
 		cancel_offer(State),
 		{noreply, State};
-	?ID_TRADE ->
+	?ID_SEND_OFFER ->
 		make_offer(State),
+		{noreply, State};
+	?ID_TRADE ->
+		accept_offer(State),
 		{noreply, State};
 	?ID_IDENTIFY ->
 		Val = identify_d(State),
