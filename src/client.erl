@@ -27,12 +27,15 @@
 -define(ID_SPY, 114).
 -define(ID_CLEAR_REQUESTS, 115).
 -define(ID_MENUBAR, 116).
+-define(ID_HARVEST_METALS, 117).
+-define(ID_HARVEST_RARE, 118).
 
 -define(ID_OFFER_WIN, 200).
 -define(ID_OFFER_R, 201).
 -define(ID_OFFER_O, 202).
 -define(ID_OFFER_RQ, 203).
 -define(ID_OFFER_OQ, 204).
+-define(ID_ESCORT_SPIN, 205).
 
 -define(ID_RETRACT, 210).
 -define(ID_CLOSE, 211).
@@ -116,7 +119,7 @@ init(Options) ->
 	% Split the window into two halves, top and bottom, tables at top and message log at bottom
 	TopSplitter   = wxSplitterWindow:new(Frame, [{style, ?wxSP_NOBORDER}]),
 	MainPanel = wxPanel:new(TopSplitter, []),
-	MainSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 
 	LSizer = wxBoxSizer:new(?wxVERTICAL),
 	RSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -133,6 +136,19 @@ init(Options) ->
 
 	ContactSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Demands"}]),
 	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Offers"}]),
+	
+	% MainPanel will hold ListSizer and ButtonSizer
+	ListSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	HarvestSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, MainPanel, [{label, "Harvest..."}]),
+
+	HarvestButtonPanelM = wxPanel:new(MainPanel, []),
+	HarvestButtonPanelR = wxPanel:new(MainPanel, []),
+
+	wxButton:new(HarvestButtonPanelM, ?ID_HARVEST_METALS, [{label, "Metals"}]),
+	wxButton:new(HarvestButtonPanelR, ?ID_HARVEST_RARE, [{label, "Precious Materials"}]),
+
+	wxWindow:connect(MainPanel, command_button_clicked),
 
 	% Connect the sizers together
 	SzOpts = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND }],
@@ -148,8 +164,16 @@ init(Options) ->
 	wxSizer:add(RSizer, ContactSizer, SzOpts),
 	wxSizer:add(RSizer, OfferSizer, SzOpts),
 
-	wxSizer:add(MainSizer, LSizer, SzOpts),
-	wxSizer:add(MainSizer, RSizer, SzOpts),
+	wxSizer:add(ListSizer, LSizer, SzOpts),
+	wxSizer:add(ListSizer, RSizer, SzOpts),
+
+	wxSizer:add(HarvestSizer, HarvestButtonPanelM, SzOpts),
+	wxSizer:add(HarvestSizer, HarvestButtonPanelR, SzOpts),
+
+	wxSizer:add(ButtonSizer, HarvestSizer, SzOpts),
+
+	wxSizer:add(MainSizer, ListSizer, SzOpts),
+	wxSizer:add(MainSizer, ButtonSizer, SzOpts),
 
 	% initialize the message log with a welcome message
 	AddEvent = fun(Parent) ->
@@ -166,8 +190,8 @@ init(Options) ->
 	% create the message log window
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
 	% split the elements of TopSplitter and keep the message log smaller
-	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 470}]),
-	wxSplitterWindow:setSashGravity(TopSplitter, 0.8),
+	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 520}]),
+	wxSplitterWindow:setSashGravity(TopSplitter, 0.80),
 
 	% initialize the State record
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
@@ -213,6 +237,11 @@ accept_offer(State) ->
 	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
 	wxWindow:setId(OfferList, ?ID_ACCEPT_OFFER), % <----------
 	insert_offer(OfferList, Offers),
+
+	EscortSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Escorts"}]),
+	SpinPanel = wxPanel:new(Panel, []),
+	Escorts = wxSpinCtrl:new(SpinPanel, [{id, ?ID_ESCORT_SPIN}]),
+	wxSpinCtrl:setRange(Escorts, 0, arbitrator:get_escorts()),
 	
 	ButtonPanel1 = wxPanel:new(Panel, []),
 	ButtonPanel2 = wxPanel:new(Panel, []),
@@ -227,7 +256,9 @@ accept_offer(State) ->
 	% connect sizers
 	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
 
+	wxSizer:add(EscortSizer, SpinPanel, Options),
 	wxSizer:add(OSizer, OfferPanel, Options),
+	wxSizer:add(OSizer, EscortSizer, Options),
 	wxSizer:add(BSizer, ButtonPanel1, Options),
 	wxSizer:add(BSizer, ButtonPanel2, Options),
 	wxSizer:add(Sizer, OSizer, Options),
@@ -619,10 +650,13 @@ handle_event(#wx{id = Id,
 		OLW = wxWindow:findWindowById(?ID_ACCEPT_OFFER),
 		OL = wx:typeCast(OLW, wxListCtrl),
 		Sel = wxListCtrl:getNextItem(OL, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}]),
+		WS = wxWindow:findWindowById(?ID_ESCORT_SPIN),
+		Spin = wx:typeCast(WS, wxSpinCtrl),
+		Escorts = wxSpinCtrl:getValue(Spin),
 		if Sel =/= -1 ->
 			Arg = wxListCtrl:getItemText(OL, Sel),
 			format(State#state.log, "Initiating trade mission with ~p ~n", [Arg]),
-		   	arbitrator:accept_offer(Arg);
+		   	arbitrator:accept_offer(Arg, Escorts);
 		true -> true
 		end,
 		wxWindow:destroy(W0),
@@ -634,6 +668,12 @@ handle_event(#wx{id = Id,
 	?ID_CLOSE -> % user closed the cancel offer window
 		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
 		wxWindow:destroy(W0),
+		{noreply, State};
+	?ID_HARVEST_RARE -> % shortcut button to harvest metals
+		arbitrator:harvest("Rare"),
+		{noreply, State};
+	?ID_HARVEST_METALS -> % shortcut button to harvest metals
+		arbitrator:harvest("Common"),
 		{noreply, State};
 	_ -> % useful for debugging
 		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
@@ -697,6 +737,13 @@ handle_event(#wx{id = Id,
 		{noreply, State};
 	?ID_CLEAR_REQUESTS -> % remove old demands
 		arbitrator:clear_trade_requests(),
+		{noreply, State};
+	?ID_SPY -> % send a spy drone
+		N = node_d(State, "Spy on:"),
+		if N =/= none, N =/= [] ->
+			   arbitrator:send_spy_drone(N);
+	   true -> true
+		end,
 		{noreply, State};
 	?ID_IDENTIFY -> % set your node and host name
 		Val = identify_d(State),
