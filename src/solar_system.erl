@@ -540,6 +540,7 @@ handle_cast({transport_done, Type, Qt}, State) ->
 handle_cast(clear_trade_requests, State) ->
 	{Res, Ships, TradeRes, _, Off, Out, Con} = State,
 	NewReq = dict:from_list([]),
+	arbitrator:update_trade_requests(NewReq),
 	{noreply, {Res, Ships, TradeRes, NewReq, Off, Out, Con}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
