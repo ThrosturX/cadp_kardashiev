@@ -44,21 +44,21 @@
 -define(MAX_BUILD_TIME, 10000).
 -define(MIN_BUILD_TIME, 7000).
 
--define(MAX_SPY_TIME, 5000).
--define(MIN_SPY_TIME, 2000).
+-define(MAX_TRANSPORT_TIME, 5000).
+-define(MIN_TRANSPORT_TIME, 2000).
 
 -define(CARGO_SHIP_FACTOR, 2).
 -define(DEATH_RAY_FACTOR, 10).
 -define(ESCORT_FACTOR, 4).
 -define(HARVESTER_FACTOR, 1).
--define(SPY_FACTOR, 1).
+-define(SPY_FACTOR, 6).
 
 -define(CARGO_SHIP_METALS, 200).
 -define(CARGO_SHIP_WATER, 2).
 -define(CARGO_SHIP_CARBON, 3).
--define(DEATH_RAY_METALS, 1000).
--define(DEATH_RAY_WATER, 50).
--define(DEATH_RAY_CARBON, 50).
+-define(DEATH_RAY_METALS, 5000).
+-define(DEATH_RAY_WATER, 1000).
+-define(DEATH_RAY_CARBON, 1000).
 -define(ESCORT_METALS, 500).
 -define(ESCORT_WATER, 9).
 -define(ESCORT_CARBON, 5).
@@ -334,9 +334,9 @@ send_spy_drone(Node) ->
 		Reply == nodrone ->
 			arbitrator:format("There are no available spy drones for this mission!~n", []);
 		true ->
-			randomSleep(?MIN_SPY_TIME, ?MAX_SPY_TIME),
+			transport_delay(),
 			{Res, Ships} = sendWait(spy, [], Node, 5000),
-			randomSleep(?MIN_SPY_TIME, ?MAX_SPY_TIME),
+			transport_delay(),
 			arbitrator:format("~p resources: ~w~n", [Node, dict:to_list(Res)]),
 			arbitrator:format("~p ships: ~w~n", [Node, dict:to_list(Ships)]),
 			gen_server:cast(solar_system, return_drone),
@@ -661,6 +661,9 @@ handle_cast({offer_cancelled, Node}, State) ->
 	arbitrator:update_offers(NewOff),
 	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con, DR, System}};
+handle_cast({transport_lost}, State) ->
+	io:format("A transport was lost."),
+	{noreply, State};
 handle_cast({transport_done, Type, Qt, NumberOfEscorts}, State) ->
 	io:format("Gen_server: transport is done ~n This function should update the resources instead: ~p ~p ~n", [Type, Qt]),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
@@ -708,7 +711,33 @@ terminate(normal, _State) ->
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
+transport_delay() ->
+	randomSleep(?MIN_TRANSPORT_TIME, ?MAX_TRANSPORT_TIME).
+
+attacked_by_pirates(NumberOfEscorts) ->
+	Pirates = random(0, 10),
+	Strength = random(0, 10),
+
+	if Pirates > 7, Strength > NumberOfEscorts ->
+		RemainingEscorts = lists:max([0, NumberOfEscorts - Strength]);
+	   Pirates > 5, Strength == NumberOfEscorts ->
+		   RemainingEscorts = lists:max([0, NumberOfEscorts - 1]);
+	   true -> RemainingEscorts = NumberOfEscorts
+	end,
+	RemainingEscorts.
+
 transport(Type, Qt, NumberOfEscorts) -> 
-	arbitrator:format("Currently transporting ~p ~p with ~p escorts ~n", [Qt, Type, NumberOfEscorts]),
-	sleep(5000),
-	gen_server:cast(solar_system, {transport_done, Type, Qt, NumberOfEscorts}).
+	arbitrator:format("Transporting ~p x ~p, escorted by a team of size ~p ~n", [Qt, Type, NumberOfEscorts]),
+	if NumberOfEscorts =/= 0 ->
+		   Escorts = attacked_by_pirates(NumberOfEscorts),
+		   transport_delay(); % wait for escorts to arrive
+	true -> Escorts = NumberOfEscorts
+	end,
+	RemainingEscorts = attacked_by_pirates(Escorts),
+	if RemainingEscorts == 0 ->
+		gen_server:cast(solar_system, {transport_lost});
+	   true -> 
+		transport_delay(),
+		gen_server:cast(solar_system, {transport_done, Type, Qt, RemainingEscorts})
+	end.
+
