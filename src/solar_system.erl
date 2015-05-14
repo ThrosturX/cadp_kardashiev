@@ -250,7 +250,7 @@ offer(Node, TWant, QT, THave, QH) ->
 			arbitrator:format("Outstanding offer to ~p present.~n", [Node])
 	end.
 	
-accept_offer(Node) ->
+accept_offer(Node, NumberOfEscorts) ->
 	% First check if resources are available
 	io:format("Are resources available?~n"),
 	{THave, Qty, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
@@ -269,7 +269,7 @@ accept_offer(Node) ->
 			if
 				ReplyFromOther == confirm ->
 					%sleep, need to spawn if so.
-					gen_server:cast(solar_system, {offer_confirmed, Node});
+					gen_server:cast(solar_system, {offer_confirmed, Node, NumberOfEscorts});
 				true ->
 					gen_server:cast(solar_system, {offer_cancelled, Node})
 			end
@@ -532,19 +532,20 @@ handle_cast({Node, outoffer, {TWant, QT, THave, QH}}, State) ->
 	Fun = fun(Old) -> Old end,
 	NOut = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Out),
 	{noreply, {Res, Ships, TradeRes, Req, Off, NOut, Con, DR}};	
-handle_cast({offer_confirmed, Node}, State) ->
+handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	[{THad, QH, TGot, QG}] = dict:fetch(Node, Off),
 	
-	spawn(solar_system, transport, [TGot, QG]),
+	spawn(solar_system, transport, [TGot, QG, NumberOfEscorts]),
 	
 	%% Update dictionaries
 	NewOff = dict:erase(Node, Off), 
 	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+	NewShips = dict:update_counter('Escort', -NumberOfEscorts, Ships)
 
 	arbitrator:update_offers(NewOff),
 	
-	{noreply, {Res, Ships, NewTradeRes, Req, NewOff, Out, Con, DR}};
+	{noreply, {Res, NewShips, NewTradeRes, Req, NewOff, Out, Con, DR}};
 handle_cast({offer_cancelled, Node}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	[{THad, QH, _, _}] = dict:fetch(Node, Off),
