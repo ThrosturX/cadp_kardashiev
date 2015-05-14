@@ -150,5 +150,5 @@ offers_to_list([]) -> [];
 offers_to_list([H|T]) ->
 	io:format("H is: ~p~n", [H]),
 	{Node, [L]} = H,
-	{A, B, C, D} = L,
+	{A, B, C, D, E} = L,
 	[{a2l(Node), a2l(A), i2l(B), a2l(C), i2l(D)}] ++ offers_to_list(T).	
