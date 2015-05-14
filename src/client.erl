@@ -444,7 +444,7 @@ handle_event(#wx{id = Id,
 		Q2 = wxSpinCtrl:getValue(OQC),
 		wxWindow:destroy(W0),
 		N = node_d(State, "Make offer:"),
-		if N =/= none, W =/= "", H =/= "" ->
+		if N =/= none, N =/= [], W =/= "", H =/= "" ->
 			arbitrator:offer(N, W, Q1, H, Q2);
 		true -> true
 		end,
@@ -495,7 +495,10 @@ handle_event(#wx{id = Id,
 		{noreply, State};
 	?ID_MESSAGE ->
 		N = node_d(State, "Send to:"),
-		send_message(State,N),
+		if N =/= none, N =/= [] ->
+			send_message(State,N);
+		true -> true
+		end,
 		{noreply, State};
 	?ID_TRADE ->
 		make_offer(State),
