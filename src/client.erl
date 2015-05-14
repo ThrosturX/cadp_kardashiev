@@ -686,7 +686,7 @@ handle_event(#wx{id = Id,
 		arbitrator:harvest("Rare"),
 		{noreply, State};
 	?ID_HARVEST_METALS -> % shortcut button to harvest metals
-		arbitrator:harvest("Common"),
+		arbitrator:harvest("Metals"),
 		{noreply, State};
 	_ -> % useful for debugging
 		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
