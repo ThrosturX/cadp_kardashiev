@@ -447,7 +447,6 @@ handle_call({start_harvest, Type}, _From, State) ->
 				io:format("Type is ~p~n", [Type]),
 				if 
 					Type =/= 'Rare' -> 
-						io:format("HELLO ~n"),
 						{reply, {ship, Type}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}};
 					System == true->
 						{reply, {ship, 'Water'}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}};
