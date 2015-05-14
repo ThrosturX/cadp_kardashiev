@@ -426,7 +426,7 @@ dialog_harvest_rsrc(State) ->
 	true -> Choice = none
 	end,
 	wxDialog:destroy(Dialog),
-	format(State#state.log, "~p ~n", [Choice]),
+	%format(State#state.log, "~p ~n", [Choice]),
 	Choice.
 
 node_d(State, Str) -> 
@@ -500,7 +500,8 @@ handle_event(#wx{id = Id,
 		Sel = wxListCtrl:getNextItem(OL, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}]),
 		if Sel =/= -1 ->
 			Arg = wxListCtrl:getItemText(OL, Sel),
-			format(State#state.log, "Selection: ~p ~n", [Arg]);
+			format(State#state.log, "Cancelling offer to ~p ~n", [Arg]),
+		   	arbitrator:cancel_offer(Arg);
 		true -> true
 		end,
 		wxWindow:destroy(W0),
