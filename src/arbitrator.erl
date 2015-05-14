@@ -27,12 +27,6 @@ update_offers(P) ->
 	Result = offers_to_list(dict:to_list(P)),
 	io:format("OFFER LIST: ~p~n", [Result]),
 	client:notify({offers, Result}).
-offers_to_list([]) -> [];
-offers_to_list([H|T]) ->
-	io:format("H is: ~p~n", [H]),
-	{Node, [L]} = H,
-	{A, B, C, D} = L,
-	[{a2l(Node), a2l(A), integer_to_list(B), a2l(C), integer_to_list(D)}] ++ offers_to_list(T).
 	
 update_resources(P) -> client:notify({resources, dic_list_atom_to_string(P)}).
 update_ships(P) -> client:notify({ships, dic_list_atom_to_string(P)}).
@@ -78,6 +72,7 @@ get_contacts() ->
 l2a(N) -> list_to_atom(N).
 l2i(N) -> list_to_integer(N).
 a2l(N) -> atom_to_list(N).
+i2l(N) -> integer_to_list(N).
 
 dic_list_atom_to_string(L) ->
 	dic_list_atom_to_string(L,[]).
@@ -104,4 +99,10 @@ key_to_list(Key, [H|T]) ->
 atom_list_to_string_list([]) -> [];
 atom_list_to_string_list([H|T]) ->
 	[a2l(H)] ++ atom_list_to_string_list(T).
-	 
+
+offers_to_list([]) -> [];
+offers_to_list([H|T]) ->
+	io:format("H is: ~p~n", [H]),
+	{Node, [L]} = H,
+	{A, B, C, D} = L,
+	[{a2l(Node), a2l(A), i2l(B), a2l(C), i2l(D)}] ++ offers_to_list(T).	
