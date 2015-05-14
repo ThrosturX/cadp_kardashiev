@@ -162,6 +162,8 @@ init(Options) ->
 
 	wxButton:new(BuildButtonPanelH, ?ID_BUILD_HARVESTER, [{label, "Harvester"}]),
 	wxButton:new(BuildButtonPanelC, ?ID_BUILD_CARGO_SHIP, [{label, "Cargo Ship"}]),
+	wxButton:new(BuildButtonPanelE, ?ID_BUILD_ESCORT, [{label, "Escort"}]),
+	wxButton:new(BuildButtonPanelS, ?ID_BUILD_SPY_DRONE, [{label, "Spy Drone"}]),
 
 	wxWindow:connect(MainPanel, command_button_clicked),
 
@@ -187,6 +189,8 @@ init(Options) ->
 
 	wxSizer:add(BuildSizer, BuildButtonPanelH, SzOpts),
 	wxSizer:add(BuildSizer, BuildButtonPanelC, SzOpts),
+	wxSizer:add(BuildSizer, BuildButtonPanelE, SzOpts),
+	wxSizer:add(BuildSizer, BuildButtonPanelS, SzOpts),
 
 	wxSizer:add(ButtonSizer, HarvestSizer, SzOpts),
 	wxSizer:add(ButtonSizer, BuildSizer, SzOpts),

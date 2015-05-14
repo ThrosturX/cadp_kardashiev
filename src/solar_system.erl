@@ -48,7 +48,7 @@
 -define(MIN_BUILD_TIME, 7000).
 
 %% Transport time constants
--define(MAX_TRANSPORT_TIME, 5000).
+-define(MAX_TRANSPORT_TIME, 30000).
 -define(MIN_TRANSPORT_TIME, 2000).
 
 %% Factor constants
@@ -753,11 +753,11 @@ transport_delay() ->
 
 attacked_by_pirates(NumberOfEscorts) ->
 	Pirates = random(0, 100),
-	Strength = random(0, 5),
+	Strength = random(0, 3),
 
 	if Pirates > 75, Strength > NumberOfEscorts ->
 		RemainingEscorts = lists:max([0, NumberOfEscorts - Strength]);
-	   Pirates > 50, Strength == NumberOfEscorts; Strength == 5 ->
+	   Pirates > 50, Strength == NumberOfEscorts; Strength == 3 ->
 		   RemainingEscorts = lists:max([0, NumberOfEscorts - 1]);
 	   true -> RemainingEscorts = NumberOfEscorts
 	end,
