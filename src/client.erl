@@ -20,7 +20,7 @@
 -define(ID_CARGO_SHIP, 108).
 -define(ID_ESCORT, 109).
 -define(ID_IDENTIFY, 110).
--define(ID_OFFERS, 111).
+-define(ID_CANCEL_OFFER, 111).
 
 start() ->
 	start([]).
@@ -55,7 +55,7 @@ init(Options) ->
 	wxMenu:append(Mission, ?ID_TRADE, "&Trade"),
 	Comms	= wxMenu:new([]),
 	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast"),
-	wxMenu:append(Comms, ?ID_OFFERS, "&My Offers"),
+	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "&Cancel Offers"),
 	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
 	wxMenu:appendSeparator(Comms),
@@ -153,6 +153,44 @@ init(Options) ->
 -define(ID_OFFER_RQ, 203).
 -define(ID_OFFER_OQ, 204).
 
+-define(ID_RETRACT, 210).
+-define(ID_CLOSE, 211).
+-define(ID_MY_OFFERS, 212).
+
+cancel_offer(State) ->
+	Frame = wxFrame:new(State#state.win, ?ID_CANCEL_OFFER, "Cancel Offer",
+						[{style,
+						  ?wxCAPTION bor
+						  ?wxCLOSE_BOX bor
+						  ?wxSTAY_ON_TOP
+						 }]),
+
+	Offers = arbitrator:get_outgoing_offers(),
+
+	Panel = wPanel:new(Frame, []),
+	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
+	
+	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Outgoing Offers"}]),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, ?ID_MY_OFFERS, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	insert_offer(OfferList, Offers),
+
+	ButtonPanel = wxPanel:new(Panel, []),
+
+	BSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxButton:new(ButtonPanel, ?ID_RETRACT, [{label, "Retract Offer"}]),
+	wxButton:new(ButtonPanel, ?ID_CLOSE, [{label, "Close"}]),
+
+	wxWindow:connect(Panel, command_button_clicked),
+
+	wxSizer:add(OSizer, OfferPanel),
+	wxSizer:add(BSizer, ButtonPanel),
+	wxSizer:add(Sizer, OSizer),
+	wxSizer:add(Sizer, BSizer),
+
+	wxPanel:setSizer(Panel, Sizer),
+	wxFrame:center(Frame),
+	wxFrame:show(Frame).
+
 make_offer(State) ->
 	Frame = wxFrame:new(State#state.win, ?ID_OFFER_WIN, "Make Trade Offer",
 						[{style,
@@ -232,6 +270,12 @@ cols_to_listctrl(Ctrl, [H|T]) ->
 	{N, S} = H,
 	wxListCtrl:insertColumn(Ctrl, N, S),
 	cols_to_listctrl(Ctrl, T).
+
+create_list_ctrl(Parent, Id, L) ->
+	Panel = wxPanel:new(Parent, []),
+	ListCtrl = wxListCtrl:new(Panel, [{id, Id}, {style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 300}}]),
+	cols_to_listctrl(ListCtrl, L),
+	{Panel, ListCtrl}.
 
 create_list_ctrl(Parent, L) ->
 	Panel = wxPanel:new(Parent, []),
@@ -453,6 +497,18 @@ handle_event(#wx{id = Id,
 		W0 = wxWindow:findWindowById(?ID_OFFER_WIN),
 		wxWindow:destroy(W0),
 		{noreply, State};
+	?ID_RETRACT ->
+		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
+		OLW = wxWindow:findWindowById(?ID_MY_OFFERS),
+		OL = wx:typeCast(OLW, wxListCtrl),
+		Sel = wxListCtrl:getNextItem(-1, ?wxLIST_NEXT_ALL, ?wxLIST_STATE_SELECTED),
+		format(State#state.log, "Selection: ~p ~n", [Sel]),
+		wxWindow:destory(W0),
+		{noreply, State};
+	?ID_CLOSE ->
+		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
+		wxWindow:destory(W0),
+		{noreply, State};
 	_ ->
 		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
 		{noreply, State}
@@ -499,6 +555,9 @@ handle_event(#wx{id = Id,
 			send_message(State,N);
 		true -> true
 		end,
+		{noreply, State};
+	?ID_CANCEL_OFFER ->
+		cancel_offer(State),
 		{noreply, State};
 	?ID_TRADE ->
 		make_offer(State),
