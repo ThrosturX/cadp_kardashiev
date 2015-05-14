@@ -10,9 +10,9 @@
 	set_node_name/1, 
 	request_trade/2,
 	cancel_trade/2,
-	offer/5,
+	offer/6,
 	cancel_offer/1,
-	accept_offer/1,
+	accept_offer/2,
 	harvest/1,
 	build/1,
 	built_death_ray/0,
@@ -21,6 +21,7 @@
 	ship_types/0,
 	send_private_message/2,
 	get_contacts/0,
+	get_escorts/0,
 	get_outgoing_offers/0,
 	get_incoming_offers/0,
 	clear_trade_requests/0,
@@ -67,15 +68,15 @@ request_trade(Want, Have) -> solar_system:trade_request(l2a(Want), l2a(Have)).
 cancel_trade(Want, Have) -> solar_system:cancel_request(l2a(Want), l2a(Have)).
 
 %% Spawns offer process that handle offer
-offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), WQ, l2a(Have), HQ).
+offer(Node, Want, WQ, Have, HQ, NumberOfEscorts) -> solar_system:offer(l2a(Node), l2a(Want), WQ, l2a(Have), HQ, NumberOfEscorts).
 
 %% Cancel offer made to Node
 cancel_offer(Node) -> solar_system:cancel_offer(l2a(Node)).
 
 %% Accept offer from Node
-accept_offer(Node) -> 
+accept_offer(Node, NumberOfEscorts) -> 
 	io:format("ARB:ARB:  ACCEPT OFFER ~p~n", [Node]),
-	solar_system:accept_offer(l2a(Node)).
+	solar_system:accept_offer(l2a(Node), NumberOfEscorts).
 
 %%% Inside Solar System 
 %% Start harvesting mission of type Type
@@ -91,6 +92,9 @@ resource_types() -> solar_system:resource_types().
 ship_types() -> solar_system:ship_types(). 
 
 %%% Request information
+%% get number of escorts
+get_escorts() -> solar_system:get_number_of_escorts().
+
 %% Get nodes we have made contact with.
 get_contacts() -> 
 	atom_list_to_string_list(solar_system:get_contacts()).
