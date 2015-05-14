@@ -275,7 +275,7 @@ get_incoming_offers() ->
 
 %% Cleans out the trade requests dictionary
 clear_trade_requests() ->
-	ok.
+	gen_server:cast(solar_system, clear_trade_requests).
 	
 %% Spawns resource planets in to solar system	
 spawner() -> 
@@ -537,6 +537,10 @@ handle_cast({transport_done, Type, Qt}, State) ->
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	arbitrator:update_resources(dict:to_list(NewRes)),
 	{noreply, {NewRes, NewShips, TradeRes, Req, Off, Out, Con}};
+handle_cast(clear_trade_requests, State) ->
+	{Res, Ships, TradeRes, _, Off, Out, Con} = State,
+	NewReq = dict:from_list([]),
+	{noreply, {Res, Ships, TradeRes, NewReq, Off, Out, Con}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
