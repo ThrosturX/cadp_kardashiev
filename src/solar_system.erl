@@ -112,7 +112,7 @@ start_link() ->
 stop() ->
 	gen_server:cast(?SERVER, stop).
 
-%% Sets the Nodes name.
+%% Sets the name of the node.
 set_node_name(Name) ->
 	%io:format("Setting node name to: ~w~n", [Name]),
 	net_kernel:start([Name, longnames]),
@@ -122,9 +122,11 @@ set_node_name(Name) ->
 print() ->
 	gen_server:call(solar_system, print_state).
 
+%% Outputs list of all resource types
 resource_types() ->
 	["Metals", "Water", "Carbon"].
 
+%% Outputs list of all ship types
 ship_types() ->
 	["Escort", "Harvester", "Cargo ship"].
 
