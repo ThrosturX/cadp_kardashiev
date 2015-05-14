@@ -228,6 +228,7 @@ offer(Node, TWant, QT, THave, QH) ->
 					arbitrator:format("There are not enough resources for this mission!~n", []),
 					{ok, Reply};
 				true ->
+					arbitrator:format("Offer sent to ~p: ~p ~p for ~p ~p~n", [Node, THave, QH, TWant, QT]),
 					send(offer, {TWant, QT, THave, QH}, Node),
 					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
 			end;
