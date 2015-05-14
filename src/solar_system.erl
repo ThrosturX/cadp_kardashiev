@@ -35,25 +35,30 @@
 
 -define(SERVER, ?MODULE).
 
-%% Definition of constants 
+%%% Definition of constants 
+%% Harvest constants
 -define(MAX_HARVEST_METAL, 150).
 -define(MAX_HARVEST_RARE, 30).
 -define(MAX_HARVEST, 1000).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
 
+%% Building time constants
 -define(MAX_BUILD_TIME, 10000).
 -define(MIN_BUILD_TIME, 7000).
 
+%% Transport time constants
 -define(MAX_TRANSPORT_TIME, 5000).
 -define(MIN_TRANSPORT_TIME, 2000).
 
+%% Factor constants
 -define(CARGO_SHIP_FACTOR, 2).
 -define(DEATH_RAY_FACTOR, 10).
 -define(ESCORT_FACTOR, 4).
 -define(HARVESTER_FACTOR, 1).
 -define(SPY_FACTOR, 6).
 
+%% Building constants
 -define(CARGO_SHIP_METALS, 200).
 -define(CARGO_SHIP_WATER, 2).
 -define(CARGO_SHIP_CARBON, 3).
