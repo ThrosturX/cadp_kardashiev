@@ -272,7 +272,7 @@ offer(Node, TWant, QT, THave, QH, NumberOfEscorts) ->
 					{ok, Reply};
 				true ->
 					arbitrator:format("Offer sent to ~p: ~p ~p for ~p ~p~n", [Node, THave, QH, TWant, QT]),
-					send(offer, {TWant, QT, THave, QH}, Node),
+					send(offer, {TWant, QT, THave, QH, NumberOfEscorts}, Node),
 					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH, NumberOfEscorts}})
 			end;
 		true ->
@@ -282,7 +282,7 @@ offer(Node, TWant, QT, THave, QH, NumberOfEscorts) ->
 accept_offer(Node, NumberOfEscorts) ->
 	% First check if resources are available
 	io:format("Are resources available?~n"),
-	{THave, Qty, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
+	{THave, Qty, _, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
 	
 	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty, NumberOfEscorts}),
 	if
@@ -596,13 +596,13 @@ handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),
 	arbitrator:update_trade_requests(NReq),
 	{noreply, {Res, Ships, TradeRes, NReq, Off, Out, Con, DR, System}};
-handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
-	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
+handle_cast({Node, offer, {TWant, QT, THave, QH, NumberOfEscorts}}, State) ->
+	io:format("Offer from ~w: ~wx~w for ~wx~w, escorts: ~w~n", [Node, TWant, QT, THave, QH, NumberOfEscorts]),
 	%io:format("State is: ~p~n", [State]),
 	%TODO: Update offer list in GUI.
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	Fun = fun(Old) -> Old end,
-	NOff = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Off),
+	NOff = dict:update(Node, Fun, [{TWant, QT, THave, QH, NumberOfEscorts}], Off),
 	arbitrator:update_offers(NOff),
 	NewCon = dict:store(Node, 0, Con),
 	{noreply, {Res, Ships, TradeRes, Req, NOff, Out, NewCon, DR, System}};
@@ -635,7 +635,7 @@ handle_cast({Node, outoffer, {TWant, QT, THave, QH, NumberOfEscorts}}, State) ->
 	{noreply, {Res, Ships, TradeRes, Req, Off, NOut, Con, DR, System}};	
 handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
-	[{THad, QH, TGot, QG}] = dict:fetch(Node, Off),
+	[{THad, QH, TGot, QG, _}] = dict:fetch(Node, Off),
 	
 	spawn(solar_system, transport, [TGot, QG, NumberOfEscorts]),
 	
@@ -648,7 +648,7 @@ handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	{noreply, {Res, Ships, NewTradeRes, Req, NewOff, Out, Con, DR, System}};
 handle_cast({offer_cancelled, Node}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
-	[{THad, QH, _, _}] = dict:fetch(Node, Off),
+	[{THad, QH, _, _, _}] = dict:fetch(Node, Off),
 	
 	%% Update dictionaries
 	NewOff = dict:erase(Node, Off), 
