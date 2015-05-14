@@ -221,11 +221,12 @@ offer(Node, TWant, QT, THave, QH) ->
 			Reply = gen_server:call(solar_system, {reserve_resource, THave, QH}),
 			if 
 				Reply == noship ->
-					{ok, Reply};% TODO: Inform GUI
+					arbitrator:format("There are no available Cargo ships for this mission!~n", []),
+					{ok, Reply};
 				Reply == nores ->
-					{ok, Reply};% TODO: Inform GUI
+					arbitrator:format("There are not enough resources for this mission!~n", []),
+					{ok, Reply};
 				true ->
-					% TODO: Update offers in GUI.
 					send(offer, {TWant, QT, THave, QH}, Node),
 					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
 			end;
@@ -241,9 +242,11 @@ accept_offer(Node) ->
 	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty}),
 	if
 		Reply == noship ->
-			{ok, Reply};% TODO: Inform GUI
+			arbitrator:format("There are no available Cargo ships for this mission!~n", []),
+			{ok, Reply};
 		Reply == nores ->
-			{ok, Reply};% TODO: Inform GUI
+			arbitrator:format("There are not enough resources for this mission!~n", []),
+			{ok, Reply};
 		true ->
 			io:format("Accepting offer from ~p~n", [Node]),
 			ReplyFromOther = sendWait(accept_offer, [], Node, 5000),
