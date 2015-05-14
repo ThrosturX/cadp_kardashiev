@@ -21,7 +21,8 @@
 	send_private_message/2,
 	get_contacts/0,
 	get_outgoing_offers/0,
-	get_incoming_offers/0]).
+	get_incoming_offers/0,
+	clear_trade_requests/0]).
 
 
 %%%% Solar System to GUI
@@ -54,6 +55,7 @@ set_node_name(Node) -> 	solar_system:set_node_name(l2a(Node)).
 send_private_message(Node, Msg) -> 
 	solar_system:send(msg, Msg, l2a(Node)),
 	client:notify({format, "Sent ~p to ~p ~n", [Msg, Node]}).
+destroy_everything() -> solar_system:destroy_everything().
 
 %%% Trade Section
 %% Send to all nodes request trade  
@@ -98,6 +100,9 @@ get_outgoing_offers() ->
 get_incoming_offers() ->
 	offers_to_list(dict:to_list(solar_system:get_incoming_offers())).
 
+clear_trade_requests() ->
+	solar_system:clear_trade_requests().
+	
 %%%% Helper functions
 l2a(N) -> list_to_atom(N).
 l2i(N) -> list_to_integer(N).

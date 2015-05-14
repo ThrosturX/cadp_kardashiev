@@ -23,7 +23,9 @@
 		transport/2,
 		get_contacts/0,
 		get_outgoing_offers/0,
-		get_incoming_offers/0]).
+		get_incoming_offers/0,
+		clear_trade_requests/0, 
+		destroy_everything/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -195,6 +197,12 @@ harvesting(Type) ->
 	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST)}).
 
+%% Death Ray activated send to all nodes reset of resources and ships
+destroy_everything() ->
+	arbitrator:format("Activating Death Ray~n", []),
+	Fun = fun(N) -> send(deathray, {}, N) end,
+	lists:foreach(Fun, nodes()).
+
 %% Send to all nodes trade request
 trade_request(TWant, THave) ->
 	Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
@@ -227,11 +235,12 @@ offer(Node, TWant, QT, THave, QH) ->
 					arbitrator:format("There are not enough resources for this mission!~n", []),
 					{ok, Reply};
 				true ->
+					arbitrator:format("Offer sent to ~p: ~p ~p for ~p ~p~n", [Node, THave, QH, TWant, QT]),
 					send(offer, {TWant, QT, THave, QH}, Node),
 					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
 			end;
 		true ->
-			io:format("Outstanding offer to ~p present.~n", [Node])
+			arbitrator:format("Outstanding offer to ~p present.~n", [Node])
 	end.
 	
 accept_offer(Node) ->
@@ -271,6 +280,10 @@ get_outgoing_offers() ->
 get_incoming_offers() ->
 	gen_server:call(solar_system, get_incoming_offers).
 
+%% Cleans out the trade requests dictionary
+clear_trade_requests() ->
+	gen_server:cast(solar_system, clear_trade_requests).
+	
 %% Spawns resource planets in to solar system	
 spawner() -> 
 	io:format("Spawner~n").
@@ -442,6 +455,15 @@ handle_cast({Node, msg, Msg}, State) ->
 	NewCon = dict:store(Node, 0, Con),
 	arbitrator:format("!!! Private message from ~w: ~p !!!~n", [Node, Msg]),
 	{noreply, {Resources, Ships, Trade, Req, Off, Out, NewCon}};
+handle_cast({Node, deathray, {}}, State) ->
+	io:format("Death ray :(~n"),
+	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
+	NewRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	NewShips = dict:from_list([{'Cargo ship', 0}, {'Harvester', 0}, {'Escort', 0}]),
+	NewTradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	arbitrator:update_resources(dict:to_list(NewRes)),
+	arbitrator:update_ships(dict:to_list(NewShips)),
+	{noreply, {NewRes, NewShips, NewTradeRes, Req, Off, Out, Con}};
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
@@ -461,7 +483,7 @@ handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	{noreply, {Res, Ships, TradeRes, NReq, Off, Out, Con}};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
-	io:format("State is: ~p~n", [State]),
+	%io:format("State is: ~p~n", [State]),
 	%TODO: Update offer list in GUI.
 	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
 	Fun = fun(Old) -> Old end,
@@ -531,6 +553,11 @@ handle_cast({transport_done, Type, Qt}, State) ->
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	arbitrator:update_resources(dict:to_list(NewRes)),
 	{noreply, {NewRes, NewShips, TradeRes, Req, Off, Out, Con}};
+handle_cast(clear_trade_requests, State) ->
+	{Res, Ships, TradeRes, _, Off, Out, Con} = State,
+	NewReq = dict:from_list([]),
+	arbitrator:update_trade_requests(NewReq),
+	{noreply, {Res, Ships, TradeRes, NewReq, Off, Out, Con}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
