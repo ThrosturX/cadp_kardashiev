@@ -558,11 +558,12 @@ handle_event(#wx{id = Id,
 		Sel = wxListCtrl:getNextItem(OL, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}]),
 		if Sel =/= -1 ->
 			Arg = wxListCtrl:getItemText(OL, Sel),
-			format(State#state.log, "Cancelling offer to ~p ~n", [Arg]),
+			format(State#state.log, "Initiating trade mission with ~p ~n", [Arg]),
 		   	arbitrator:accept_offer(Arg);
 		true -> true
 		end,
-		wxWindow:destroy(W0);
+		wxWindow:destroy(W0),
+		{noreply, State};
 	?ID_CLOSE_TRADE ->
 		W0 = wxWindow:findWindowById(?ID_TRADE),
 		wxWindow:destroy(W0),
