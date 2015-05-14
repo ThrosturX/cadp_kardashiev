@@ -138,7 +138,6 @@ build(Type) ->
 %% if there are enough resources to build the ship 
 build_process(Type) ->
 	SType = atom_to_list(Type),
-	%arbitrator:format("Build: ~p ~n", [SType]),
 	if
 		Type == 'Death Ray' ->
 			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_METALS, ?DEATH_RAY_WATER, ?DEATH_RAY_CARBON}),
@@ -187,8 +186,7 @@ build_process(Type) ->
 					arbitrator:format("Spy drone: ~p Metals, ~p Water, ~p Carbon~n", [?SPY_METALS, ?SPY_WATER, ?SPY_CARBON])
 			end;
 		true ->
-			io:format("Unkown Type: ~p~n", [SType]),
-			arbitrator:format("Unkown Type: ~p", [SType]),
+			arbitrator:format("ERROR:213 - Unkown Type: ~p", [SType]),
 			false
 	end.
 
@@ -208,7 +206,7 @@ building(Type) ->
 		Type == 'Spy drone' ->
 			randomSleep(?MIN_BUILD_TIME * ?SPY_FACTOR, ?MAX_BUILD_TIME * ?SPY_FACTOR);
 		true ->
-			io:format("Error in building function~n")
+			arbitrator:format("ERROR:214 - Unkown Type: ~p", [SType])
 	end,
 	gen_server:cast(solar_system, {building, Type}),
 	arbitrator:format("Done building: ~p~n", [SType]).
