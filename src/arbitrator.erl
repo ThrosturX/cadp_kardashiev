@@ -11,6 +11,7 @@
 	request_trade/2,
 	cancel_trade/2,
 	offer/5,
+	cancel_offer/1,
 	harvest/1,
 	build/1,
 	resource_types/0,
@@ -60,6 +61,9 @@ cancel_trade(Want, Have) -> solar_system:cancel_request(l2a(Want), l2a(Have)).
 
 %% Spawns offer process that handle offer
 offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), WQ, l2a(Have), HQ).
+
+%% Cancel offer made to Node
+cancel_offer(Node) -> solar_system:cancel_offer(l2a(Node)).
 
 %%% Inside Solar System 
 %% Start harvesting mission of type Type
