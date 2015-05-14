@@ -18,6 +18,7 @@
 	send_private_message/2,
 	get_contacts/0]).
 
+%%%% Solar System to GUI
 update_contacts(D) ->
 	Keys = dict:fetch_keys(D),
 	Result = requests_to_list(Keys, D),
@@ -42,6 +43,8 @@ format(S, P) ->
 	io:format(S,P),
 	client:notify({format, S, P}).
 die() -> client:notify(die).
+built_death_ray() -> ok.
+
 
 %%%% GUI to Solar System
 %% Connect to network of nodes
@@ -51,7 +54,7 @@ set_node_name(Node) -> 	solar_system:set_node_name(l2a(Node)).
 %% Send the message Msg to Node 
 send_private_message(Node, Msg) -> 
 	solar_system:send(msg, Msg, l2a(Node)),
-	client:notify({format, "Sent \"~p\" to ~p ~n", [Msg, Node]}).
+	client:notify({format, "Sent ~p to ~p ~n", [Msg, Node]}).
 
 %%% Trade Section
 %% Send to all nodes request trade  

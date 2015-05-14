@@ -114,7 +114,8 @@ build_process(Type) ->
 			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_IRON, ?DEATH_RAY_FOOD, ?DEATH_RAY_GAS}),
 			if
 				Reply == build_ok ->
-					building(Type);
+					building(Type),
+					arbitrator:built_death_ray();
 				true ->
 					arbitrator:format("Not enough resources~n", []),
 					arbitrator:format("DEATH RAY: ~p Iron, ~p Food, ~p Gas~n", [?DEATH_RAY_IRON, ?DEATH_RAY_FOOD, ?DEATH_RAY_GAS])
