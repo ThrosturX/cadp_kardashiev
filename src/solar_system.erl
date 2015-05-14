@@ -23,7 +23,8 @@
 		transport/2,
 		get_contacts/0,
 		get_outgoing_offers/0,
-		get_incoming_offers/0]).
+		get_incoming_offers/0,
+		clear_trade_requests/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -231,7 +232,7 @@ offer(Node, TWant, QT, THave, QH) ->
 					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
 			end;
 		true ->
-			io:format("Outstanding offer to ~p present.~n", [Node])
+			arbitrator:format("Outstanding offer to ~p present.~n", [Node])
 	end.
 	
 accept_offer(Node) ->
@@ -271,6 +272,10 @@ get_outgoing_offers() ->
 get_incoming_offers() ->
 	gen_server:call(solar_system, get_incoming_offers).
 
+%% Cleans out the trade requests dictionary
+clear_trade_requests() ->
+	ok.
+	
 %% Spawns resource planets in to solar system	
 spawner() -> 
 	io:format("Spawner~n").
