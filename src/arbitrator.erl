@@ -10,7 +10,7 @@
 	set_node_name/1, 
 	request_trade/2,
 	cancel_trade/2,
-	offer/5,
+	offer/6,
 	cancel_offer/1,
 	accept_offer/2,
 	harvest/1,
@@ -67,7 +67,7 @@ request_trade(Want, Have) -> solar_system:trade_request(l2a(Want), l2a(Have)).
 cancel_trade(Want, Have) -> solar_system:cancel_request(l2a(Want), l2a(Have)).
 
 %% Spawns offer process that handle offer
-offer(Node, Want, WQ, Have, HQ) -> solar_system:offer(l2a(Node), l2a(Want), WQ, l2a(Have), HQ).
+offer(Node, Want, WQ, Have, HQ, NumberOfEscorts) -> solar_system:offer(l2a(Node), l2a(Want), WQ, l2a(Have), HQ, NumberOfEscorts).
 
 %% Cancel offer made to Node
 cancel_offer(Node) -> solar_system:cancel_offer(l2a(Node)).
