@@ -21,6 +21,7 @@
 	ship_types/0,
 	send_private_message/2,
 	get_contacts/0,
+	get_escorts/0,
 	get_outgoing_offers/0,
 	get_incoming_offers/0,
 	clear_trade_requests/0]).
@@ -90,6 +91,9 @@ resource_types() -> solar_system:resource_types().
 ship_types() -> solar_system:ship_types(). 
 
 %%% Request information
+%% get number of escorts
+get_escorts() -> solar_system:get_number_of_escorts().
+
 %% Get nodes we have made contact with.
 get_contacts() -> 
 	atom_list_to_string_list(solar_system:get_contacts()).
