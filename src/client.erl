@@ -160,8 +160,9 @@ init(Options) ->
 -define(ID_CLOSE, 211).
 -define(ID_MY_OFFERS, 212).
 
--define(ID_ACCEPT, 220).
--define(ID_ACCEPT_OFFER, 221).
+-define(ID_ACCEPT_TRADE, 220).
+-define(ID_CLOSE_TRADE, 221).
+-define(ID_ACCEPT_OFFER, 222).
 
 accept_offer(State) -> 
 	Frame = wxFrame:new(State#state.win, ?ID_TRADE, "Send cargo ship", 
@@ -184,8 +185,8 @@ accept_offer(State) ->
 	ButtonPanel2 = wxPanel:new(Panel, []),
 
 	BSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxButton:new(ButtonPanel1, ?ID_ACCEPT, [{label, "Accept Offer"}]),
-	wxButton:new(ButtonPanel2, ?ID_CLOSE, [{label, "Close"}]),
+	wxButton:new(ButtonPanel1, ?ID_ACCEPT_TRADE, [{label, "Accept Offer"}]),
+	wxButton:new(ButtonPanel2, ?ID_CLOSE_TRADE, [{label, "Close"}]),
 	
 	wxWindow:connect(Panel, command_button_clicked),
 	
@@ -548,6 +549,22 @@ handle_event(#wx{id = Id,
 		   	arbitrator:cancel_offer(Arg);
 		true -> true
 		end,
+		wxWindow:destroy(W0),
+		{noreply, State};
+	?ID_ACCEPT_TRADE ->
+		W0 = wxWindow:findWindowById(?ID_TRADE),
+		OLW = wxWindow:findWindowById(?ID_ACCEPT_OFFER),
+		OL = wx:typeCast(OLW, wxListCtrl),
+		Sel = wxListCtrl:getNextItem(OL, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}]),
+		if Sel =/= -1 ->
+			Arg = wxListCtrl:getItemText(OL, Sel),
+			format(State#state.log, "Cancelling offer to ~p ~n", [Arg]),
+		   	arbitrator:accept_offer(Arg);
+		true -> true
+		end,
+		wxWindow:destroy(W0);
+	?ID_CLOSE_TRADE ->
+		W0 = wxWindow:findWindowById(?ID_TRADE),
 		wxWindow:destroy(W0),
 		{noreply, State};
 	?ID_CLOSE ->
