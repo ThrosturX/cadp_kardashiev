@@ -35,6 +35,7 @@
 
 -define(SERVER, ?MODULE).
 
+%% Definition of constants 
 -define(MAX_HARVEST_METAL, 15).
 -define(MAX_HARVEST_RARE, 3).
 -define(MAX_HARVEST, 1000).
@@ -69,12 +70,14 @@
 -define(SPY_WATER, 2).
 -define(SPY_CARBON, 5).
 
+%% Random function seeds and returns random number from 0 to N
 random(N) ->
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	%random:seed(A,B,C),
 	random:seed(now()),
 	random:uniform(N).
 
+%% Random function seeds and returns random number between N and M
 random(N,M) -> 
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	{A, B, C} = now(),
@@ -82,13 +85,16 @@ random(N,M) ->
 	%random:seed(now()),
 	N + random:uniform(M+1) - 1.
 
+%% Sleep function makes process wait for T milliseconds
 sleep(T) ->
 	receive
 	after T -> true
 	end.
 
+%% Sleeps 0 to T
 randomSleep(T) ->
 	sleep(random(T)).
+%% Sleeps N to M
 randomSleep(N,M) ->
 	sleep(random(N,M)).
 
