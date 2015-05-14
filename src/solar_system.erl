@@ -436,10 +436,16 @@ handle_call(_Msg, _From, State) ->
 handle_cast({building, Type}, State) ->
 	%io:format("Cast-building: ~w~n", [Type]),
 	{Resources, Ships, Trade, Req, Off, Out, Con, DR} = State,
+	
 	NewShips = dict:update_counter(Type, 1, Ships),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	%io:format("Cast-building: ~w - Done!~n", [Type]),
-	{noreply, {Resources, NewShips, Trade, Req, Off, Out, Con, DR}};
+	if 
+		Type == 'Death Ray' ->
+			{noreply, {Resources, NewShips, Trade, Req, Off, Out, Con, true}};
+		true ->
+			{noreply, {Resources, NewShips, Trade, Req, Off, Out, Con, DR}}
+	end;
 %% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Type, Qty}, State) ->
 	io:format("harvest cast~n"),
