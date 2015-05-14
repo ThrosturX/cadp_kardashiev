@@ -225,7 +225,7 @@ cancel_offer(Node) ->
 	gen_server:cast(solar_system, {cOutOffer, Node}),
 	send(coffer, {}, Node).
 
-%% Check if offer is possible then send offer to Node
+%% Check if offer is possible then send offer to Node.
 offer(Node, TWant, QT, THave, QH) ->
 	io:format("Offer~n"),
 		
@@ -250,6 +250,7 @@ offer(Node, TWant, QT, THave, QH) ->
 			arbitrator:format("Outstanding offer to ~p present.~n", [Node])
 	end.
 	
+%% Accept offer from Node if possible.
 accept_offer(Node) ->
 	% First check if resources are available
 	io:format("Are resources available?~n"),
