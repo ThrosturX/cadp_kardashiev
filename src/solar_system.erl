@@ -247,7 +247,7 @@ offer(Node, TWant, QT, THave, QH, NumberOfEscorts) ->
 				true ->
 					arbitrator:format("Offer sent to ~p: ~p ~p for ~p ~p~n", [Node, THave, QH, TWant, QT]),
 					send(offer, {TWant, QT, THave, QH}, Node),
-					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
+					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH, NumberOfEscorts}})
 			end;
 		true ->
 			arbitrator:format("Outstanding offer to ~p present.~n", [Node])
@@ -427,9 +427,9 @@ handle_call({Node, accept_offer, _Msg}, _From, State) ->
 	ContainsNode = dict:is_key(Node, Out),
 	if
 		ContainsNode == true ->
-			[{TGot, QG, THad, QH}] = dict:fetch(Node, Out),
-	
-			spawn(solar_system, transport, [TGot, QG]),
+			[{TGot, QG, THad, QH, NumberOfEscorts}] = dict:fetch(Node, Out),
+			
+			spawn(solar_system, transport, [TGot, QG, NumberOfEscorts]),
 			
 			%% Update dictionaries
 			NewOut = dict:erase(Node, Out), 
@@ -528,8 +528,9 @@ handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 handle_cast({cOutOffer, Node}, State) ->
 	io:format("Cancel our own offer ~n"),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
-	[{_, _, THave, Qt}] = dict:fetch(Node, Out),
-	NShips = dict:update_counter('Cargo ship', 1, Ships),
+	[{_, _, THave, Qt, NumberOfEscorts}] = dict:fetch(Node, Out),
+	TShips = dict:update_counter('Cargo ship', 1, Ships),
+	NShips = dict:update_counter('Escort', NumberOfEscorts, TShips),
 	NOut = dict:erase(Node, Off),
 	NRes = dict:update_counter(THave, Qt, Res),
 	NTradeRes = dict:update_counter(THave, -Qt, TradeRes),
