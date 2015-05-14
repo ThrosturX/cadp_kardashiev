@@ -20,7 +20,8 @@
 		set_node_name/1,
 		accept_offer/1, 
 		cancel_offer/1,
-		get_contacts/0]).
+		get_contacts/0,
+		get_outgoing_offers/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -252,8 +253,13 @@ accept_offer(Node) ->
 			end
 	end.
 
+%% Returns a list of nodes we have made contact with.
 get_contacts() ->
 	gen_server:call(solar_system, get_contacts).
+
+%% Returns a list of offers we have made to other nodes.
+get_outgoing_offers() ->
+	gen_server:call(solar_system, get_outgoing_offers).
 
 %% Spawns resource planets in to solar system	
 spawner() -> 
@@ -389,6 +395,9 @@ handle_call(get_contacts, _From, State) ->
 	{_, _, _, _, _, _, Con} = State,
 	Contacts = dict:fetch_keys(Con),
 	{reply, Contacts, State};
+handle_call(get_outgoing_offers, _From, State) ->
+	{_, _, _, _, _, Out, _} = State,
+	{reply, Out, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
 
@@ -425,7 +434,7 @@ handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	Fun = fun(Old) -> [{TWant, THave}] ++ Old -- [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),
 	NewCon = dict:store(Node, 0, Con),		
-	arbitrator:update_contacts(NReq),
+	arbitrator:update_trade_requests(NReq),
 	{noreply, {Res, Ships, TradeRes, NReq, Off, Out, NewCon}};
 %% receives a trade cancellation from another player
 handle_cast({Node, ctrade, {TWant, THave}}, State) ->
@@ -433,7 +442,7 @@ handle_cast({Node, ctrade, {TWant, THave}}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
 	Fun = fun(Old) -> Old -- [{TWant, THave}] end,
 	NReq = dict:update(Node, Fun, [{TWant, THave}], Req),
-	arbitrator:update_contacts(NReq),
+	arbitrator:update_trade_requests(NReq),
 	{noreply, {Res, Ships, TradeRes, NReq, Off, Out, Con}};
 handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 	io:format("Offer from ~w: ~wx~w for ~wx~w~n", [Node, TWant, QT, THave, QH]),
