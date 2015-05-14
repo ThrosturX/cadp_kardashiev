@@ -369,12 +369,15 @@ spawner() ->
 
 %%% Network functions 
 
+%% Connects to Node
 connect(Node) ->
 	net_kernel:connect_node(Node).
 
+%% Displays all nodes you are connected to
 display_nodes() ->
 	nodes().	
 
+%% Sends message of type Type to Node 
 send(Type, Msg, Node) ->
 	gen_server:cast({solar_system, Node}, {node(), Type, Msg}).
 
