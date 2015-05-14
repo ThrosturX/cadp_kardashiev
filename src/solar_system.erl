@@ -743,6 +743,7 @@ transport(Type, Qt, NumberOfEscorts) ->
 		gen_server:cast(solar_system, {transport_lost});
 	   true -> 
 		transport_delay(),
+		arbitrator:format("Transport team has arrived! ~n", []),
 		gen_server:cast(solar_system, {transport_done, Type, Qt, RemainingEscorts})
 	end.
 
