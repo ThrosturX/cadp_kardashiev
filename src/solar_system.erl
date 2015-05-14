@@ -346,7 +346,7 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 %% prints the resources and ships available
 handle_call(resources, _From, State) ->
 	io:format("State is: ~p~n", [State]),
-	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
+	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	io:format("Resources: ~p~n", [dict:to_list(Res)]),
 	io:format("Ships: ~p~n", [dict:to_list(Ships)]),
 	io:format("TradeRes: ~p~n", [dict:to_list(TradeRes)]),
@@ -465,7 +465,7 @@ handle_cast({Node, msg, Msg}, State) ->
 	{noreply, {Resources, Ships, Trade, Req, Off, Out, NewCon, DR}};
 handle_cast({Node, deathray, {}}, State) ->
 	io:format("Death ray :(~n"),
-	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
+	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	NewRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	NewShips = dict:from_list([{'Cargo ship', 0}, {'Harvester', 0}, {'Escort', 0}]),
 	NewTradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
