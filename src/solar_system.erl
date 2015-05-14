@@ -180,14 +180,18 @@ building(Type) ->
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
 harvest(Type) ->
-	io:format("Harvest~n"),
-	Reply = gen_server:call(solar_system, start_harvest),
-	io:format("reply: ~p~n", [Reply]),
-	if
-		Reply == ship ->
-			spawn(solar_system, harvesting, [Type]);
-		true ->
-			false
+	IsResource = lists:member(Type, ['Iron', 'Food', 'Gas']),
+	if IsResource == true ->
+		io:format("Harvest~n"),
+		Reply = gen_server:call(solar_system, start_harvest),
+		io:format("reply: ~p~n", [Reply]),
+		if
+			Reply == ship ->
+				spawn(solar_system, harvesting, [Type]);
+			true ->
+				false
+		end;
+	true -> arbitrator:format("~p is not a resource ~n", [Type])
 	end.
 
 % Perform a harvesting operation of the given type and after waiting for  
