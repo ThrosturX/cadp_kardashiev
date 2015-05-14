@@ -102,7 +102,7 @@ init(Options) ->
 	{OfferPanel, Offers} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
 
 	ResourceSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Resources"}]),
-	ShipSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Ships"}]),
+	ShipSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Ships and Agents"}]),
 
 	ContactSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Demands"}]),
 	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Offers"}]),
@@ -483,7 +483,7 @@ dialog_harvest_rsrc(State) ->
 	%format(State#state.log, "~p ~n", [Choice]),
 	Choice.
 
-add_death_ray(State) ->
+add_death_ray(_State) ->
 	ok.
 %	WMB = wxWindow:findWindowById(?ID_MENUBAR),
 %	format(State#state.log, "WMB: ~p ~n", [WMB]),
@@ -600,23 +600,24 @@ handle_event(#wx{id = Id,
 		 State = #state{}) ->
 	case Id of
 	?wxID_ABOUT ->
-	AboutString = string:join(["Kardashiev Space Trading & Strategy Game.\n",
-					   "By:\n Björn Ingi Baldvinsson,\n",
-					   " Jón Reginbald,\n",
-					   " Stefanía Bergljót Stefánsdóttir and\n",
-					   " Þröstur Thorarensen.\n",
-					   "Implemented in Erlang as a part of\n",
-					   "CADP-2015 @ Reykjavik University\n",
-					   "running under ",
-					   wx_misc:getOsDescription(),
-					   "."], 
-		""),
-		wxMessageDialog:showModal(wxMessageDialog:new(State#state.win, AboutString,
+		AboutString = string:join(["Kardashiev Space Trading & Strategy Game.\n",
+						   "By:\n Björn Ingi Baldvinsson,\n",
+						   " Jón Reginbald,\n",
+						   " Stefanía Bergljót Stefánsdóttir and\n",
+						   " Þröstur Thorarensen.\n",
+						   "Implemented in Erlang as a part of\n",
+						   "CADP-2015 @ Reykjavik University\n",
+						   "running under ",
+						   wx_misc:getOsDescription(),
+						   "."], 
+			""),
+		Modal = wxMessageDialog:new(State#state.win, AboutString,
 							  [{style,
 								?wxOK bor
 								?wxICON_INFORMATION bor
 								?wxSTAY_ON_TOP},
-							   {caption, "About"}])),
+							   {caption, "About"}]),
+		wxMessageDialog:showModal(Modal),
 		{noreply, State};
 	?wxID_EXIT ->
 		{stop, normal, State};

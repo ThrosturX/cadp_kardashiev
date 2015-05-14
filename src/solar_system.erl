@@ -576,7 +576,7 @@ handle_cast(deathray, State) ->
 		lists:foreach(Fun, nodes()),
 		{noreply, {Res, Ships, TradeRes, Req, Off, Out, Con, false}};
 	true -> 
-		arbitrator:format("You need to build Death Ray first~n"),
+		arbitrator:format("You need to build Death Ray first~n", []),
 		{noreply, State}
 	end;
 handle_cast(stop, State) ->
