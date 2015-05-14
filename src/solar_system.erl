@@ -20,7 +20,7 @@
 		set_node_name/1,
 		accept_offer/1, 
 		cancel_offer/1, 
-		transport/0],
+		transport/0,
 		get_contacts/0,
 		get_outgoing_offers/0]).
 
@@ -390,6 +390,10 @@ handle_call({Node, accept_offer, _Msg}, _From, State) ->
 			NewShips = dict:update_counter('Cargo ship', 1, Ships),
 			NewRes = dict:update_counter(TGot, QG, Res),
 			NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+			
+			arbitrator:update_ships(dict:to_list(NewShips)),
+			arbitrator:update_resources(dict:to_list(NewRes)),
+			
 			{reply, confirm, {NewRes, NewShips, NewTradeRes, Req, Off, NewOut, Con}};
 		true ->
 			{reply, cancel, State}
@@ -465,6 +469,10 @@ handle_cast({cOutOffer, Node}, State) ->
 	NOut = dict:erase(Node, Off),
 	NRes = dict:update_counter(THave, Qt, Res),
 	NTradeRes = dict:update_counter(THave, -Qt, TradeRes),
+	
+	arbitrator:update_ships(dict:to_list(NShips)),
+	arbitrator:update_resources(dict:to_lsit(NRes)),
+	
 	{noreply, {NRes, NShips, NTradeRes, Req, Off, NOut, Con}};
 handle_cast({Node, coffer, _}, State) ->
 	io:format("Remove cancelled offer~n"),
@@ -490,6 +498,10 @@ handle_cast({offer_confirmed, Node}, State) ->
 	NewRes = dict:update_counter(TGot, QG, Res),
 	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
 	
+	arbitrator:update_ships(dict:to_list(NewShips)),
+	arbitrator:update_resources(dict:to_list(NewRes)),
+	arbitrator:update_offers(NewOff),
+	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con}};
 handle_cast({offer_cancelled, Node}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
@@ -500,6 +512,10 @@ handle_cast({offer_cancelled, Node}, State) ->
 	NewShips = dict:update_counter('Cargo ship', 1, Ships),
 	NewRes = dict:update_counter(THad, QH, Res),
 	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+	
+	arbitrator:update_ships(dict:to_list(NewShips)),
+	arbitrator:update_resources(dict:to_list(NewRes)),
+	arbitrator:update_offers(NewOff),
 	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con}};
 handle_cast({transport_done}, State) ->
