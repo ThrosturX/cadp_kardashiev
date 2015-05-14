@@ -27,7 +27,8 @@
 		get_incoming_offers/0,
 		clear_trade_requests/0, 
 		destroy_everything/0,
-		send_spy_drone/1]).
+		send_spy_drone/1,
+		send_spy_drone_process/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -349,6 +350,9 @@ clear_trade_requests() ->
 	
 %% Sends spy drone to Node
 send_spy_drone(Node) ->
+	spawn(solar_system, send_spy_drone_process, [Node]).
+	
+send_spy_drone_process(Node) ->
 	Reply = gen_server:call(solar_system, reserve_drone),
 	if
 		Reply == nodrone ->
