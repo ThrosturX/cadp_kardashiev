@@ -349,7 +349,7 @@ make_offer(State) ->
 
 	EscortPanel = wxPanel:new(Panel, []),
 	EscortSpin = wxSpinCtrl:new(EscortPanel, [{id, ?ID_ESCORT_SPIN2}]),
-	wiSpinCtrl:setRange(EscortSpin, 0, arbitrator:get_escorts()),
+	wxSpinCtrl:setRange(EscortSpin, 0, arbitrator:get_escorts()),
 
 	wxSpinCtrl:setRange(RQ, 1, 100),
 	wxSpinCtrl:setRange(OQ, 1, 100),
