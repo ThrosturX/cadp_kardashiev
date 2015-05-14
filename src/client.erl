@@ -128,10 +128,10 @@ init(Options) ->
 	RSizer = wxBoxSizer:new(?wxVERTICAL),
 
 	% create list controls and put them into panels for the sizers
-	{ResourcePanel, Resources} = create_list_ctrl(MainPanel, [{0, "Resource"}, {1, "Quantity"}]),
-	{ShipPanel, Ships} = create_list_ctrl(MainPanel, [{0, "Ship"}, {1, "Quantity"}]),
-	{ContactPanel, Contacts} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Have"}, {2, "Want"}]),
-	{OfferPanel, Offers} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	{ResourcePanel, Resources} = create_list_ctrl(MainPanel, [{0, "Resource"}, {1, "Quantity"}], 200, 100),
+	{ShipPanel, Ships} = create_list_ctrl(MainPanel, [{0, "Ship"}, {1, "Quantity"}], 200, 150),
+	{ContactPanel, Contacts} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Have"}, {2, "Want"}], 400, 100),
+	{OfferPanel, Offers} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
 
 	% create labelled sizers to display informative names of the lists inside them
 	ResourceSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Resources"}]),
@@ -237,7 +237,7 @@ accept_offer(State) ->
 	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
 	
 	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Incoming Offers"}]),
-	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
 	wxWindow:setId(OfferList, ?ID_ACCEPT_OFFER), % <----------
 	insert_offer(OfferList, Offers),
 
@@ -290,7 +290,7 @@ cancel_offer(State) ->
 	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
 	
 	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Outgoing Offers"}]),
-	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
 	wxWindow:setId(OfferList, ?ID_MY_OFFERS),
 	insert_offer(OfferList, Offers),
 
@@ -402,11 +402,12 @@ cols_to_listctrl(Ctrl, [H|T]) ->
 	cols_to_listctrl(Ctrl, T).
 
 % create a generic list control with the REPORT layout
-create_list_ctrl(Parent, L) ->
+create_list_ctrl(Parent, L, W, H) ->
 	Panel = wxPanel:new(Parent, []),
-	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 150}}]),
+	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {W, H}}]),
 	cols_to_listctrl(ListCtrl, L),
 	{Panel, ListCtrl}.
+create_list_ctrl(Parent, L) -> create_list_ctrl(Parent, L, 300, 100).
 
 % add a message without formatting, automatically appending a newline
 add_message(State, M) ->
