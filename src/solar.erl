@@ -1,10 +1,13 @@
 -module(solar).
--export([start/0, stop/0]).
 
-start() ->
+-behaviour(application).
+
+-export([start/2, stop/1]).
+
+start(_Type, _StartArgs) ->
 	client:start(),
 	solar_system:start_link().
 
-stop() ->
+stop(_State) ->
 	solar_system:stop(),
 	arbitrator:die().
