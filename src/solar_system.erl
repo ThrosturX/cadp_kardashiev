@@ -448,6 +448,15 @@ handle_cast({Node, msg, Msg}, State) ->
 	NewCon = dict:store(Node, 0, Con),
 	arbitrator:format("!!! Private message from ~w: ~p !!!~n", [Node, Msg]),
 	{noreply, {Resources, Ships, Trade, Req, Off, Out, NewCon}};
+handle_cast({deathray}, State) ->
+	io:format("Death ray :(~n"),
+	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
+	NewRes = dict:from_list([{'Iron', 10}, {'Food', 10}, {'Gas', 10}]),
+	NewShips = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}]),
+	NewTradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	arbitrator:update_resources(dict:to_list(NewRes)),
+	arbitrator:update_ships(dict:to_list(NewShips)),
+	{noreply, {NewRes, NewShips, NewTradeRes, Req, Off, Out, Con}}	
 %% receives a trade request from another player
 handle_cast({Node, rtrade, {TWant, THave}}, State) ->
 	io:format("Trade request from ~w: ~w, ~w~n", [Node, TWant, THave]),
