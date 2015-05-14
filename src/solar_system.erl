@@ -95,9 +95,9 @@ set_node_name(Name) ->
 	net_kernel:start([Name, longnames]),
 	erlang:set_cookie(node(), kaka). 
 
-%% Print
+%% Print server state.
 print() ->
-	gen_server:call(solar_system, resources).
+	gen_server:call(solar_system, print_state).
 
 resource_types() ->
 	["Iron", "Food", "Gas"].
@@ -350,8 +350,8 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 		true ->
 			{reply, build_nores, State}
 	end;	
-%% prints the resources and ships available
-handle_call(resources, _From, State) ->
+%% prints the server state
+handle_call(print_state, _From, State) ->
 	io:format("State is: ~p~n", [State]),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	io:format("Resources: ~p~n", [dict:to_list(Res)]),
