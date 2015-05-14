@@ -292,7 +292,7 @@ init([]) ->
 	% OutOffers: Offers to other nodes
 	% Contacts: Nodes we have made contact with
 	Resources = dict:from_list([{'Iron', 10}, {'Food', 10}, {'Gas', 10}]),
-	Ships = dict:from_list([{'Cargo ship', 3}, {'Harvester', 3}, {'Escort', 3}]),
+	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}]),
 	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
