@@ -40,7 +40,7 @@
 -define(MAX_HARVEST_METAL, 150).
 -define(MAX_HARVEST_RARE, 30).
 -define(MAX_HARVEST, 1000).
--define(MAX_HARVEST_TIME, 4000).
+-define(MAX_HARVEST_TIME, 9000).
 -define(MIN_HARVEST_TIME, 2000).
 
 %% Building time constants
