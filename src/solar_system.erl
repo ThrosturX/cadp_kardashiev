@@ -463,7 +463,7 @@ handle_call({reserve_resource, Type, Qty, NumberOfEscorts}, _From, State) ->
 	io:format("Check if enough resources~n"),
 	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
 	C = dict:fetch('Cargo ship', Ships),
-	E = dict:fetcg('Escort', Ships),
+	E = dict:fetch('Escort', Ships),
 	if 
 		C == 0 -> 
 			{reply, noship, State};
