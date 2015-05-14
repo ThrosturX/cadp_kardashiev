@@ -180,17 +180,18 @@ building(Type) ->
 
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
+% If resource does not exist in system, nothing happens
 harvest(Type) ->
-	IsResource = lists:member(Type, ['Metals', 'Water', 'Carbon']),
+	IsResource = lists:member(Type, ['Metals', 'Water', 'Carbon']) or (Type == 'Rare'),
 	if IsResource == true ->
 		io:format("Harvest~n"),
-		Reply = gen_server:call(solar_system, {start_harvest, Type}),
+		{Reply, NType} = gen_server:call(solar_system, {start_harvest, Type}),
 		io:format("reply: ~p~n", [Reply]),
 		if
 			Reply == badResource -> 
-				arbitrator:format("There is no ~p in this solar system~n", [Type]);
+				arbitrator:format("There is no ~p in this solar system~n", [NType]);
 			Reply == ship ->
-				spawn(solar_system, harvesting, [Type]);
+				spawn(solar_system, harvesting, [NType]);
 			true ->
 				false
 		end;
@@ -218,17 +219,18 @@ trade_request(TWant, THave) ->
 	true -> arbitrator:format("Not a valid resource~n", [])
 	end.
 
-%% Send to all nodes cancel request	
+%% Cancel trade requests sent to all nodes
 cancel_request(TWant, THave) ->
 	Fun = fun(N) -> send(ctrade, {TWant, THave}, N) end,
 	lists:foreach(Fun, nodes()).	
 
-%% Cancel offer
+%% Cancels an offer sent to 'Node'
 cancel_offer(Node) ->
 	gen_server:cast(solar_system, {cOutOffer, Node}),
 	send(coffer, {}, Node).
 
-%% Check if offer is possible then send offer to Node.
+% Sends offer to 'Node'
+% If we don't have enough resources or a cargo ship, nothing happens
 offer(Node, TWant, QT, THave, QH) ->
 	io:format("Offer~n"),
 		
@@ -312,6 +314,13 @@ send(Type, Msg, Node) ->
 
 sendWait(Type, Msg, Node, Time) ->	
 	gen_server:call({solar_system, Node}, {node(), Type, Msg}, Time).
+
+% Waits while goods are being transported
+transport(Type, Qt) -> 
+	io:format('Currently transporting ~n'),
+	sleep(5000),
+	gen_server:cast(solar_system, {transport_done, Type, Qt}).
+
 	
 %%% gen_server callbacks
 
@@ -324,6 +333,8 @@ init([]) ->
 	% Offers: Offers from other nodes
 	% OutOffers: Offers to other nodes
 	% Contacts: Nodes we have made contact with
+	% DR: whether we have a death ray or not
+	% System: whether the solar system has water or carbon
 	Resources = dict:from_list([{'Metals', 10}, {'Water', 10}, {'Carbon', 10}]),
 	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}]),
 	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
@@ -380,16 +391,25 @@ handle_call({start_harvest, Type}, _From, State) ->
 	io:format("check if enough ships~n"),
 	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
 	if (System == false) and (Type == 'Water') or (System == true) and (Type == 'Carbon') ->
-		{reply, badResource, State};
+		{reply, {badResource, Type}, State};
 	true ->
 		H = dict:fetch('Harvester', Ships),
 		if 
 			H == 0 -> 
-				{reply, noship, State};
+				{reply, {noship, Type}, State};
 			true -> 
-				NewShips = dict:update_counter('Harvester', -1, Ships),
-				arbitrator:update_ships(dict:to_list(NewShips)),
-				{reply, ship, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}}
+					NewShips = dict:update_counter('Harvester', -1, Ships),
+					arbitrator:update_ships(dict:to_list(NewShips)),
+				io:format("Type is ~p~n", [Type]),
+				if 
+					Type =/= 'Rare' -> 
+						io:format("HELLO ~n"),
+						{reply, {ship, Type}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}};
+					System == true->
+						{reply, {ship, 'Water'}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}};
+					true ->
+						{reply, {ship, 'Carbon'}, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}}
+				end
 		end
 	end;
 %% checks if the resources and ships needed for the given trade is available
@@ -617,8 +637,3 @@ terminate(normal, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
-
-transport(Type, Qt) -> 
-	io:format('Currently transporting ~n'),
-	sleep(5000),
-	gen_server:cast(solar_system, {transport_done, Type, Qt}).
