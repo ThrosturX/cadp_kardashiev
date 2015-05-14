@@ -159,7 +159,7 @@ building(Type) ->
 	SType = atom_to_list(Type),
 	arbitrator:format("Building: ~p~n", [SType]),
 	if
-		Type == 'Cargo hip' ->
+		Type == 'Cargo ship' ->
 			randomSleep(?MIN_BUILD_TIME * ?CARGO_SHIP_FACTOR, ?MAX_BUILD_TIME * ?CARGO_SHIP_FACTOR);
 		Type == 'Death Ray' ->
 			randomSleep(?MIN_BUILD_TIME * ?DEATH_RAY_FACTOR, ?MAX_BUILD_TIME * ?DEATH_RAY_FACTOR);
@@ -487,6 +487,9 @@ handle_cast({offer_confirmed, Node}, State) ->
 	NewShips = dict:update_counter('Cargo ship', 1, Ships),
 	NewRes = dict:update_counter(TGot, QG, Res),
 	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+	arbitrator:update_offers(NewOff),
+	arbitrator:update_ships(NewShips),
+	arbitrator:update_resources(NewRes),
 	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con}};
 handle_cast({offer_cancelled, Node}, State) ->
@@ -498,6 +501,9 @@ handle_cast({offer_cancelled, Node}, State) ->
 	NewShips = dict:update_counter('Cargo ship', 1, Ships),
 	NewRes = dict:update_counter(THad, QH, Res),
 	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
+	arbitrator:update_offers(NewOff),
+	arbitrator:update_ships(NewShips),
+	arbitrator:update_resources(NewRes),
 	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con}};
 handle_cast(stop, State) ->
