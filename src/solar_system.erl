@@ -463,6 +463,8 @@ handle_cast({cOutOffer, Node}, State) ->
 	NOut = dict:erase(Node, Off),
 	NRes = dict:update_counter(THave, Qt, Res),
 	NTradeRes = dict:update_counter(THave, -Qt, TradeRes),
+	arbitrator:update_resources(NRes),
+	arbitrator:update_ships(NShips),
 	{noreply, {NRes, NShips, NTradeRes, Req, Off, NOut, Con}};
 handle_cast({Node, coffer, _}, State) ->
 	io:format("Remove cancelled offer~n"),
