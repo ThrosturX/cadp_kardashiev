@@ -21,6 +21,7 @@
 		accept_offer/2, 
 		cancel_offer/1, 
 		transport/3,
+		get_number_of_escorts/0,
 		get_contacts/0,
 		get_outgoing_offers/0,
 		get_incoming_offers/0,
