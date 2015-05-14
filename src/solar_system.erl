@@ -73,9 +73,10 @@ random(N) ->
 
 random(N,M) -> 
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-	%random:seed(A,B,C),
-	random:seed(now()),
-	N + random:uniform(M-N).
+	{A, B, C} = now(),
+	random:seed(A,B,C),
+	%random:seed(now()),
+	N + random:uniform(M+1) - 1.
 
 sleep(T) ->
 	receive
