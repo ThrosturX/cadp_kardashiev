@@ -167,7 +167,7 @@ cancel_offer(State) ->
 
 	Offers = arbitrator:get_outgoing_offers(),
 
-	Panel = wPanel:new(Frame, []),
+	Panel = wxPanel:new(Frame, []),
 	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
 	
 	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Outgoing Offers"}]),
