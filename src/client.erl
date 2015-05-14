@@ -27,12 +27,21 @@
 -define(ID_SPY, 114).
 -define(ID_CLEAR_REQUESTS, 115).
 -define(ID_MENUBAR, 116).
+-define(ID_HARVEST_METALS, 117).
+-define(ID_HARVEST_RARE, 118).
+-define(ID_BUILD_SPY, 119).
+-define(ID_BUILD_HARVESTER, 120).
+-define(ID_BUILD_CARGO_SHIP, 121).
+-define(ID_BUILD_SPY_DRONE, 122).
+-define(ID_BUILD_ESCORT, 123).
 
 -define(ID_OFFER_WIN, 200).
 -define(ID_OFFER_R, 201).
 -define(ID_OFFER_O, 202).
 -define(ID_OFFER_RQ, 203).
 -define(ID_OFFER_OQ, 204).
+-define(ID_ESCORT_SPIN, 205).
+-define(ID_ESCORT_SPIN2, 206).
 
 -define(ID_RETRACT, 210).
 -define(ID_CLOSE, 211).
@@ -73,6 +82,7 @@ init(Options) ->
 	wxMenu:append(Build, ?ID_HARVESTER, "&Harvester"),
 	wxMenu:append(Build, ?ID_CARGO_SHIP, "&Cargo Ship"),
 	wxMenu:append(Build, ?ID_ESCORT, "&Escort"),
+	wxMenu:append(Build, ?ID_BUILD_SPY, "&Spy Drone"),
 	wxMenu:appendSeparator(Build),
 	wxMenu:append(Build, ?ID_DEATH_RAY, "&Death Ray"),
 	Mission = wxMenu:new([]),
@@ -116,16 +126,16 @@ init(Options) ->
 	% Split the window into two halves, top and bottom, tables at top and message log at bottom
 	TopSplitter   = wxSplitterWindow:new(Frame, [{style, ?wxSP_NOBORDER}]),
 	MainPanel = wxPanel:new(TopSplitter, []),
-	MainSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 
 	LSizer = wxBoxSizer:new(?wxVERTICAL),
 	RSizer = wxBoxSizer:new(?wxVERTICAL),
 
 	% create list controls and put them into panels for the sizers
-	{ResourcePanel, Resources} = create_list_ctrl(MainPanel, [{0, "Resource"}, {1, "Quantity"}]),
-	{ShipPanel, Ships} = create_list_ctrl(MainPanel, [{0, "Ship"}, {1, "Quantity"}]),
-	{ContactPanel, Contacts} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Have"}, {2, "Want"}]),
-	{OfferPanel, Offers} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	{ResourcePanel, Resources} = create_list_ctrl(MainPanel, [{0, "Resource"}, {1, "Quantity"}], 200, 100),
+	{ShipPanel, Ships} = create_list_ctrl(MainPanel, [{0, "Ship"}, {1, "Quantity"}], 200, 150),
+	{ContactPanel, Contacts} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Have"}, {2, "Want"}], 400, 100),
+	{OfferPanel, Offers} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
 
 	% create labelled sizers to display informative names of the lists inside them
 	ResourceSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Resources"}]),
@@ -133,6 +143,29 @@ init(Options) ->
 
 	ContactSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Demands"}]),
 	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Offers"}]),
+	
+	% MainPanel will hold ListSizer and ButtonSizer
+	ListSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	HarvestSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, MainPanel, [{label, "Harvest..."}]),
+	BuildSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, MainPanel, [{label, "Build..."}]),
+
+	HarvestButtonPanelM = wxPanel:new(MainPanel, []),
+	HarvestButtonPanelR = wxPanel:new(MainPanel, []),
+	BuildButtonPanelH = wxPanel:new(MainPanel, []),
+	BuildButtonPanelC = wxPanel:new(MainPanel, []),
+	BuildButtonPanelE = wxPanel:new(MainPanel, []),
+	BuildButtonPanelS = wxPanel:new(MainPanel, []),
+
+	wxButton:new(HarvestButtonPanelM, ?ID_HARVEST_METALS, [{label, "Metals"}]),
+	wxButton:new(HarvestButtonPanelR, ?ID_HARVEST_RARE, [{label, "Precious Materials"}]),
+
+	wxButton:new(BuildButtonPanelH, ?ID_BUILD_HARVESTER, [{label, "Harvester"}]),
+	wxButton:new(BuildButtonPanelC, ?ID_BUILD_CARGO_SHIP, [{label, "Cargo Ship"}]),
+	wxButton:new(BuildButtonPanelE, ?ID_BUILD_ESCORT, [{label, "Escort"}]),
+	wxButton:new(BuildButtonPanelS, ?ID_BUILD_SPY_DRONE, [{label, "Spy Drone"}]),
+
+	wxWindow:connect(MainPanel, command_button_clicked),
 
 	% Connect the sizers together
 	SzOpts = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND }],
@@ -148,8 +181,22 @@ init(Options) ->
 	wxSizer:add(RSizer, ContactSizer, SzOpts),
 	wxSizer:add(RSizer, OfferSizer, SzOpts),
 
-	wxSizer:add(MainSizer, LSizer, SzOpts),
-	wxSizer:add(MainSizer, RSizer, SzOpts),
+	wxSizer:add(ListSizer, LSizer, SzOpts),
+	wxSizer:add(ListSizer, RSizer, SzOpts),
+
+	wxSizer:add(HarvestSizer, HarvestButtonPanelM, SzOpts),
+	wxSizer:add(HarvestSizer, HarvestButtonPanelR, SzOpts),
+
+	wxSizer:add(BuildSizer, BuildButtonPanelH, SzOpts),
+	wxSizer:add(BuildSizer, BuildButtonPanelC, SzOpts),
+	wxSizer:add(BuildSizer, BuildButtonPanelE, SzOpts),
+	wxSizer:add(BuildSizer, BuildButtonPanelS, SzOpts),
+
+	wxSizer:add(ButtonSizer, HarvestSizer, SzOpts),
+	wxSizer:add(ButtonSizer, BuildSizer, SzOpts),
+
+	wxSizer:add(MainSizer, ListSizer, SzOpts),
+	wxSizer:add(MainSizer, ButtonSizer, SzOpts),
 
 	% initialize the message log with a welcome message
 	AddEvent = fun(Parent) ->
@@ -166,8 +213,8 @@ init(Options) ->
 	% create the message log window
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
 	% split the elements of TopSplitter and keep the message log smaller
-	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 470}]),
-	wxSplitterWindow:setSashGravity(TopSplitter, 0.8),
+	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 520}]),
+	wxSplitterWindow:setSashGravity(TopSplitter, 0.80),
 
 	% initialize the State record
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
@@ -210,9 +257,14 @@ accept_offer(State) ->
 	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
 	
 	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Incoming Offers"}]),
-	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
 	wxWindow:setId(OfferList, ?ID_ACCEPT_OFFER), % <----------
 	insert_offer(OfferList, Offers),
+
+	EscortSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Escorts"}]),
+	SpinPanel = wxPanel:new(Panel, []),
+	Escorts = wxSpinCtrl:new(SpinPanel, [{id, ?ID_ESCORT_SPIN}]),
+	wxSpinCtrl:setRange(Escorts, 0, arbitrator:get_escorts()),
 	
 	ButtonPanel1 = wxPanel:new(Panel, []),
 	ButtonPanel2 = wxPanel:new(Panel, []),
@@ -227,7 +279,9 @@ accept_offer(State) ->
 	% connect sizers
 	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
 
+	wxSizer:add(EscortSizer, SpinPanel, Options),
 	wxSizer:add(OSizer, OfferPanel, Options),
+	wxSizer:add(OSizer, EscortSizer, Options),
 	wxSizer:add(BSizer, ButtonPanel1, Options),
 	wxSizer:add(BSizer, ButtonPanel2, Options),
 	wxSizer:add(Sizer, OSizer, Options),
@@ -256,7 +310,7 @@ cancel_offer(State) ->
 	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
 	
 	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Outgoing Offers"}]),
-	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
 	wxWindow:setId(OfferList, ?ID_MY_OFFERS),
 	insert_offer(OfferList, Offers),
 
@@ -313,12 +367,17 @@ make_offer(State) ->
 	RQ = wxSpinCtrl:new(ReqPanel2, [{id, ?ID_OFFER_RQ}]),
 	OQ = wxSpinCtrl:new(OffPanel2, [{id, ?ID_OFFER_OQ}]),
 
+	EscortPanel = wxPanel:new(Panel, []),
+	EscortSpin = wxSpinCtrl:new(EscortPanel, [{id, ?ID_ESCORT_SPIN2}]),
+	wxSpinCtrl:setRange(EscortSpin, 0, arbitrator:get_escorts()),
+
 	wxSpinCtrl:setRange(RQ, 1, 100),
 	wxSpinCtrl:setRange(OQ, 1, 100),
 
 	CancelPanel = wxPanel:new(Panel, []),
 	ConfirmPanel = wxPanel:new(Panel, []),
 	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	EscortSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Escorts"}]),
 
 	_Cancel = wxButton:new(CancelPanel, ?wxID_DELETE, [{label, "Cancel"}]),
 	_Confirm = wxButton:new(ConfirmPanel, ?wxID_APPLY, [{label, "Confirm"}]),
@@ -326,8 +385,10 @@ make_offer(State) ->
 	wxWindow:connect(Panel, command_button_clicked),
 
 	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
+	wxSizer:add(EscortSizer, EscortPanel, Options),
 	wxSizer:add(ButtonSizer, CancelPanel, Options),
 	wxSizer:add(ButtonSizer, ConfirmPanel, Options),
+	wxSizer:add(ButtonSizer, EscortSizer),
 
 	wxSizer:add(RequestSizer, ReqPanel1, Options),
 	wxSizer:add(RequestSizer, ReqPanel2, Options),
@@ -361,11 +422,12 @@ cols_to_listctrl(Ctrl, [H|T]) ->
 	cols_to_listctrl(Ctrl, T).
 
 % create a generic list control with the REPORT layout
-create_list_ctrl(Parent, L) ->
+create_list_ctrl(Parent, L, W, H) ->
 	Panel = wxPanel:new(Parent, []),
-	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 150}}]),
+	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {W, H}}]),
 	cols_to_listctrl(ListCtrl, L),
 	{Panel, ListCtrl}.
+create_list_ctrl(Parent, L) -> create_list_ctrl(Parent, L, 300, 100).
 
 % add a message without formatting, automatically appending a newline
 add_message(State, M) ->
@@ -590,10 +652,13 @@ handle_event(#wx{id = Id,
 		H = wxControlWithItems:getStringSelection(OC),
 		Q1 = wxSpinCtrl:getValue(RQC),
 		Q2 = wxSpinCtrl:getValue(OQC),
+		EW = wxWindow:findWindowById(?ID_ESCORT_SPIN2),
+		EC = wx:typeCast(EW, wxSpinCtrl),
+		Escorts = wxSpinCtrl:getValue(EC),
 		wxWindow:destroy(W0),
 		N = node_d(State, "Make offer:"),
 		if N =/= none, N =/= [], W =/= "", H =/= "" ->
-			arbitrator:offer(N, W, Q1, H, Q2);
+			arbitrator:offer(N, W, Q1, H, Q2, Escorts);
 		true -> true
 		end,
 		{noreply, State};
@@ -619,10 +684,13 @@ handle_event(#wx{id = Id,
 		OLW = wxWindow:findWindowById(?ID_ACCEPT_OFFER),
 		OL = wx:typeCast(OLW, wxListCtrl),
 		Sel = wxListCtrl:getNextItem(OL, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}]),
+		WS = wxWindow:findWindowById(?ID_ESCORT_SPIN),
+		Spin = wx:typeCast(WS, wxSpinCtrl),
+		Escorts = wxSpinCtrl:getValue(Spin),
 		if Sel =/= -1 ->
 			Arg = wxListCtrl:getItemText(OL, Sel),
 			format(State#state.log, "Initiating trade mission with ~p ~n", [Arg]),
-		   	arbitrator:accept_offer(Arg);
+		   	arbitrator:accept_offer(Arg, Escorts);
 		true -> true
 		end,
 		wxWindow:destroy(W0),
@@ -634,6 +702,24 @@ handle_event(#wx{id = Id,
 	?ID_CLOSE -> % user closed the cancel offer window
 		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
 		wxWindow:destroy(W0),
+		{noreply, State};
+	?ID_BUILD_HARVESTER -> % build a harvester
+		arbitrator:build("Harvester"),
+		{noreply, State};
+	?ID_BUILD_CARGO_SHIP -> % build a cargo ship
+		arbitrator:build("Cargo ship"),
+		{noreply, State};
+	?ID_BUILD_ESCORT -> % build a escort
+		arbitrator:build("Escort"),
+		{noreply, State};
+	?ID_BUILD_SPY_DRONE -> % build a spy drone
+		arbitrator:build("Spy drone"),
+		{noreply, State};
+	?ID_HARVEST_RARE -> % shortcut button to harvest metals
+		arbitrator:harvest("Rare"),
+		{noreply, State};
+	?ID_HARVEST_METALS -> % shortcut button to harvest metals
+		arbitrator:harvest("Metals"),
 		{noreply, State};
 	_ -> % useful for debugging
 		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
@@ -698,12 +784,22 @@ handle_event(#wx{id = Id,
 	?ID_CLEAR_REQUESTS -> % remove old demands
 		arbitrator:clear_trade_requests(),
 		{noreply, State};
+	?ID_SPY -> % send a spy drone
+		N = node_d(State, "Spy on:"),
+		if N =/= none, N =/= [] ->
+			   arbitrator:send_spy_drone(N);
+	   true -> true
+		end,
+		{noreply, State};
 	?ID_IDENTIFY -> % set your node and host name
 		Val = identify_d(State),
 		if Val =/= none -> 
 			format(State#state.log, "You are now known as: ~p ~n", [Val]);
 		true -> true
 		end,
+		{noreply, State};
+	?ID_BUILD_SPY -> % build a spy drone
+		arbitrator:build("Spy drone"),
 		{noreply, State};
 	?ID_HARVESTER -> % build a harvester
 		arbitrator:build("Harvester"),
