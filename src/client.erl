@@ -275,7 +275,7 @@ cols_to_listctrl(Ctrl, [H|T]) ->
 
 create_list_ctrl(Parent, L) ->
 	Panel = wxPanel:new(Parent, []),
-	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 300}}]),
+	ListCtrl = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 150}}]),
 	cols_to_listctrl(ListCtrl, L),
 	{Panel, ListCtrl}.
 
