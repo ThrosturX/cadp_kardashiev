@@ -209,6 +209,7 @@ destroy_everything() ->
 trade_request(TWant, THave) ->
 	IsResource = lists:member(TWant, ['Iron', 'Food', 'Gas']) and lists:member(THave, ['Iron', 'Food', 'Gas']),
 	if IsResource == true ->
+		arbitrator:format("Broadcasting need for ~p, offering ~p~n", [TWant,THave]),
 		Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
 		lists:foreach(Fun, nodes());
 	true -> arbitrator:format("Not a valid resource~n", [])
@@ -469,9 +470,9 @@ handle_cast({Node, msg, Msg}, State) ->
 	NewCon = dict:store(Node, 0, Con),
 	arbitrator:format("!!! Private message from ~w: ~p !!!~n", [Node, Msg]),
 	{noreply, {Resources, Ships, Trade, Req, Off, Out, NewCon, DR}};
-handle_cast({Node, deathray, {}}, State) ->
-	io:format("You have been destroyed~n"),
-	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
+handle_cast({_Node, deathray, {}}, State) ->
+	io:format("You have been destroyed by the death ray :(~n"),
+	{_, _, _, Req, Off, Out, Con, _} = State,
 	NewRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	NewShips = dict:from_list([{'Cargo ship', 0}, {'Harvester', 0}, {'Escort', 0}]),
 	NewTradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
@@ -576,7 +577,10 @@ handle_cast(deathray, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	if DR == true ->
 		arbitrator:format("Activating Death Ray~n", []),
-		Fun = fun(N) -> send(deathray, {}, N) end,
+		Fun = fun(N) -> 
+			arbitrator:format("Terminating ~p~n", [N]),
+			send(deathray, {}, N) 
+		end,
 		lists:foreach(Fun, nodes()),
 		{noreply, {Res, Ships, TradeRes, Req, Off, Out, Con, false}};
 	true -> 

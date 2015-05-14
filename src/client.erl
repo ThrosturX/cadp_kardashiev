@@ -627,8 +627,8 @@ handle_event(#wx{id = Id,
 	?ID_BROADCAST -> 
 		{W, H} = broadcast_d(State),
 		if W =/= none, H =/= none ->
-			arbitrator:request_trade(W,H),
-			format(State#state.log, "Broadcasting need for ~p, offering ~p~n", [W,H]);
+			arbitrator:request_trade(W,H);
+			%format(State#state.log, "Broadcasting need for ~p, offering ~p~n", [W,H]);
 		true -> true
 		end,
 		{noreply, State};
