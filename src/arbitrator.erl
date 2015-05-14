@@ -17,6 +17,8 @@
 	build/1,
 	built_death_ray/0,
 	destroy_everything/0,
+	lost_cargo/2,
+	timed_notify/2,
 	resource_types/0,
 	ship_types/0,
 	send_private_message/2,
@@ -48,6 +50,14 @@ format(S, P) ->
 die() -> client:notify(die).
 built_death_ray() -> client:notify({acquire, death_ray}).
 
+%% Notify about lost cargo
+lost_cargo(T, Msg) -> 
+	spawn(arbitrator, timednotify, [T, Msg]).
+
+timed_notify(T, Msg) ->
+	receive after T -> true
+	end,
+	client:notify({message, Msg}).
 
 %%%% GUI to Solar System
 %% Connect to network of nodes
