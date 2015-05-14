@@ -209,6 +209,7 @@ destroy_everything() ->
 trade_request(TWant, THave) ->
 	IsResource = lists:member(TWant, ['Iron', 'Food', 'Gas']) and lists:member(THave, ['Iron', 'Food', 'Gas']),
 	if IsResource == true ->
+		arbitrator:format("Broadcasting need for ~p, offering ~p~n", [TWant,THave]),
 		Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
 		lists:foreach(Fun, nodes());
 	true -> arbitrator:format("Not a valid resource~n", [])
