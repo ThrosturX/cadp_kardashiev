@@ -80,22 +80,22 @@ randomSleep(T) ->
 randomSleep(N,M) ->
 	sleep(random(N,M)).
 
-% returns the resources formatted for the arbitrator
-%list_resources(State) -> {Res, _, _, _, _, _} = State, dict:to_list(Res).
-%list_ships(State) -> {_, Ships, _, _, _, _} = State, dict:to_list(Ships).
-	
+%% Starts the solar system Node.	
 start_link() ->
 	spawn(solar_system, spawner, []),
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+%% Stops the solar system Node.
 stop() ->
     gen_server:cast(?SERVER, stop).
 
+%% Sets the Nodes name.
 set_node_name(Name) ->
 	%io:format("Setting node name to: ~w~n", [Name]),
 	net_kernel:start([Name, longnames]),
 	erlang:set_cookie(node(), kaka). 
-	
+
+%% Print
 print() ->
 	gen_server:call(solar_system, resources).
 
