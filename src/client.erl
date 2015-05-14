@@ -160,7 +160,8 @@ init(Options) ->
 -define(ID_CLOSE, 211).
 -define(ID_MY_OFFERS, 212).
 
--define(ID_ACCEPT_OFFER, 213)
+-define(ID_ACCEPT, 220)
+-define(ID_ACCEPT_OFFER, 221)
 
 accept_offer(State) -> 
 	Frame = wxFrame:new(State#state.win, ?ID_TRADE, "Send cargo ship", 
@@ -183,7 +184,7 @@ accept_offer(State) ->
 	ButtonPanel2 = wxPanel:new(Panel, []),
 
 	BSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxButton:new(ButtonPanel1, ?ID_RETRACT, [{label, "Accept Offer"}]),
+	wxButton:new(ButtonPanel1, ?ID_ACCEPT, [{label, "Accept Offer"}]),
 	wxButton:new(ButtonPanel2, ?ID_CLOSE, [{label, "Close"}]),
 	
 	wxWindow:connect(Panel, command_button_clicked),
