@@ -124,7 +124,7 @@ init(Options) ->
 
 	{EvPanel, [EvCtrl],_} = create_subwindow(TopSplitter, "Messages", [AddEvent]),
 	wxSplitterWindow:splitHorizontally(TopSplitter, MainPanel, EvPanel, [{sashPosition, 600}]),
-	wxSplitterWindow:setSashGravity(TopSplitter, 1.0),
+	wxSplitterWindow:setSashPosition(TopSplitter, 600),
 
 	State = #state{win=Frame, log=EvCtrl, resources=Resources, contacts=Contacts, ships=Ships, offers=Offers, env=wx:get_env()},
 	Watcher = whereis(refresher),
@@ -142,6 +142,7 @@ init(Options) ->
 
 	wxPanel:setSizer(MainPanel, MainSizer),
 	wxFrame:show(Frame),
+	wxSplitterWindow:setSashGravity(TopSplitter, 1.0),
 
 	{Frame, State}.
 
