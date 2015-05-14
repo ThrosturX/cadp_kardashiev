@@ -20,7 +20,8 @@
 		set_node_name/1,
 		accept_offer/1, 
 		cancel_offer/1,
-		get_contacts/0]).
+		get_contacts/0, 
+		transport/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -315,8 +316,9 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 	end;	
 %% prints the resources and ships available
 handle_call(resources, _From, State) ->
-	{Resources, Ships, TradeRes, Req, Off, Out, Con} = State,
-	io:format("Resources: ~p~n", [dict:to_list(Resources)]),
+	io:format("State is: ~p~n", [State]),
+	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
+	io:format("Resources: ~p~n", [dict:to_list(Res)]),
 	io:format("Ships: ~p~n", [dict:to_list(Ships)]),
 	io:format("TradeRes: ~p~n", [dict:to_list(TradeRes)]),
 	io:format("Trade requests: ~p~n", [dict:to_list(Req)]),
@@ -470,6 +472,8 @@ handle_cast({offer_confirmed, Node}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con} = State,
 	[{THad, QH, TGot, QG}] = dict:fetch(Node, Off),
 	
+	spawn(solar_system, transport, []),
+	
 	%% Update dictionaries
 	NewOff = dict:erase(Node, Off), 
 	NewShips = dict:update_counter('Cargo ship', 1, Ships),
@@ -488,6 +492,9 @@ handle_cast({offer_cancelled, Node}, State) ->
 	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
 	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con}};
+handle_cast({transport_done}, State) ->
+	io:format("Gen_server: transport is done ~n"),
+	{noreply, {State}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
@@ -501,3 +508,8 @@ terminate(normal, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
+
+transport() -> 
+	io:format('Currently transporting ~n'),
+	sleep(3000),
+	gen_server:cast(solar_system, {transport_done}).
