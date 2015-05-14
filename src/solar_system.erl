@@ -170,7 +170,7 @@ build_process(Type) ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Escort ship: ~p Metals, ~p Water, ~p Carbon~n", [?SPY_METALS, ?SPY_WATER, ?SPY_CARBON])
+					arbitrator:format("Spy drone: ~p Metals, ~p Water, ~p Carbon~n", [?SPY_METALS, ?SPY_WATER, ?SPY_CARBON])
 			end;
 		true ->
 			io:format("Unkown Type: ~p~n", [SType]),
