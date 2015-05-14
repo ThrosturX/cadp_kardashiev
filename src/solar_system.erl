@@ -36,6 +36,7 @@
 
 -define(MAX_HARVEST_METAL, 15).
 -define(MAX_HARVEST_RARE, 3).
+-define(MAX_HARVEST, 1000).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
 
@@ -51,21 +52,21 @@
 -define(HARVESTER_FACTOR, 1).
 -define(SPY_FACTOR, 1).
 
--define(CARGO_SHIP_METALS, 30).
--define(CARGO_SHIP_WATER, 30).
--define(CARGO_SHIP_CARBON, 30).
+-define(CARGO_SHIP_METALS, 200).
+-define(CARGO_SHIP_WATER, 2).
+-define(CARGO_SHIP_CARBON, 3).
 -define(DEATH_RAY_METALS, 1000).
--define(DEATH_RAY_WATER, 1000).
--define(DEATH_RAY_CARBON, 1000).
--define(ESCORT_METALS, 60).
--define(ESCORT_WATER, 60).
--define(ESCORT_CARBON, 60).
--define(HARVESTER_METALS, 10).
--define(HARVESTER_WATER, 10).
--define(HARVESTER_CARBON, 10).
--define(SPY_METALS, 10).
--define(SPY_WATER, 10).
--define(SPY_CARBON, 10).
+-define(DEATH_RAY_WATER, 50).
+-define(DEATH_RAY_CARBON, 50).
+-define(ESCORT_METALS, 500).
+-define(ESCORT_WATER, 9).
+-define(ESCORT_CARBON, 5).
+-define(HARVESTER_METALS, 50).
+-define(HARVESTER_WATER, 1).
+-define(HARVESTER_CARBON, 1).
+-define(SPY_METALS, 300).
+-define(SPY_WATER, 2).
+-define(SPY_CARBON, 5).
 
 random(N) ->
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
