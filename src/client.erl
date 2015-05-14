@@ -710,10 +710,10 @@ handle_event(#wx{id = Id,
 		arbitrator:build("Cargo ship"),
 		{noreply, State};
 	?ID_BUILD_ESCORT -> % build a escort
-		arbitrator:build("Harvester"),
+		arbitrator:build("Escort"),
 		{noreply, State};
 	?ID_BUILD_SPY_DRONE -> % build a spy drone
-		arbitrator:build("Harvester"),
+		arbitrator:build("Spy drone"),
 		{noreply, State};
 	?ID_HARVEST_RARE -> % shortcut button to harvest metals
 		arbitrator:harvest("Rare"),
