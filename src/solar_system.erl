@@ -196,6 +196,12 @@ harvesting(Type) ->
 	randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 	gen_server:cast(solar_system, {harvest, Type, random:uniform(?MAX_HARVEST)}).
 
+%% Death Ray activated send to all nodes reset of resources and ships
+destroy_everything() ->
+	arbitrator:format("Activating Death Ray~n", []),
+	Fun = fun(N) -> send(deathray) end,
+	lists:foreach(Fun, nodes()).
+
 %% Send to all nodes trade request
 trade_request(TWant, THave) ->
 	Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,

@@ -54,6 +54,7 @@ set_node_name(Node) -> 	solar_system:set_node_name(l2a(Node)).
 send_private_message(Node, Msg) -> 
 	solar_system:send(msg, Msg, l2a(Node)),
 	client:notify({format, "Sent ~p to ~p ~n", [Msg, Node]}).
+destroy_everything() -> solar_system:destroy_everything().
 
 %%% Trade Section
 %% Send to all nodes request trade  
