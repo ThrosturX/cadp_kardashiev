@@ -470,7 +470,7 @@ handle_cast({Node, msg, Msg}, State) ->
 	arbitrator:format("!!! Private message from ~w: ~p !!!~n", [Node, Msg]),
 	{noreply, {Resources, Ships, Trade, Req, Off, Out, NewCon, DR}};
 handle_cast({Node, deathray, {}}, State) ->
-	io:format("Death ray :(~n"),
+	io:format("You have been destroyed~n"),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
 	NewRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	NewShips = dict:from_list([{'Cargo ship', 0}, {'Harvester', 0}, {'Escort', 0}]),
