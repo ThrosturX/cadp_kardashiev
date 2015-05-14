@@ -55,7 +55,7 @@ init(Options) ->
 	wxMenu:append(Mission, ?ID_TRADE, "&Trade"),
 	Comms	= wxMenu:new([]),
 	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast"),
-	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "&Cancel Offers"),
+	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "Cancel &Offers"),
 	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
 	wxMenu:appendSeparator(Comms),
@@ -163,6 +163,8 @@ cancel_offer(State) ->
 						  ?wxCAPTION bor
 						  ?wxCLOSE_BOX bor
 						  ?wxSTAY_ON_TOP
+						 },
+						 {size, {700, 400}
 						 }]),
 
 	Offers = arbitrator:get_outgoing_offers(),
@@ -171,21 +173,26 @@ cancel_offer(State) ->
 	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
 	
 	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Outgoing Offers"}]),
-	{OfferPanel, OfferList} = create_list_ctrl(Panel, ?ID_MY_OFFERS, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}]),
+	wxWindow:setId(OfferList, ?ID_MY_OFFERS),
 	insert_offer(OfferList, Offers),
 
-	ButtonPanel = wxPanel:new(Panel, []),
+	ButtonPanel1 = wxPanel:new(Panel, []),
+	ButtonPanel2 = wxPanel:new(Panel, []),
 
 	BSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxButton:new(ButtonPanel, ?ID_RETRACT, [{label, "Retract Offer"}]),
-	wxButton:new(ButtonPanel, ?ID_CLOSE, [{label, "Close"}]),
+	wxButton:new(ButtonPanel1, ?ID_RETRACT, [{label, "Retract Offer"}]),
+	wxButton:new(ButtonPanel2, ?ID_CLOSE, [{label, "Close"}]),
 
 	wxWindow:connect(Panel, command_button_clicked),
 
-	wxSizer:add(OSizer, OfferPanel),
-	wxSizer:add(BSizer, ButtonPanel),
-	wxSizer:add(Sizer, OSizer),
-	wxSizer:add(Sizer, BSizer),
+	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
+
+	wxSizer:add(OSizer, OfferPanel, Options),
+	wxSizer:add(BSizer, ButtonPanel1, Options),
+	wxSizer:add(BSizer, ButtonPanel2, Options),
+	wxSizer:add(Sizer, OSizer, Options),
+	wxSizer:add(Sizer, BSizer, Options),
 
 	wxPanel:setSizer(Panel, Sizer),
 	wxFrame:center(Frame),
@@ -205,13 +212,10 @@ make_offer(State) ->
 	Panel = wxPanel:new(Frame, []),
 	SuperSizer = wxBoxSizer:new(?wxVERTICAL),
 	MainSizer = wxBoxSizer:new(?wxHORIZONTAL),
-	RequestSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Panel,
+	RequestSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel,
 										[{label, "Request"}]),
-	OfferSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, Panel,
+	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel,
 										[{label, "Offer"}]),
-
-	ReqSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel),
-	OffSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel),
 
 	ReqPanel1 = wxPanel:new(Panel, []),
 	OffPanel1 = wxPanel:new(Panel, []),
@@ -240,13 +244,11 @@ make_offer(State) ->
 	wxSizer:add(ButtonSizer, CancelPanel, Options),
 	wxSizer:add(ButtonSizer, ConfirmPanel, Options),
 
-	wxSizer:add(ReqSizer, ReqPanel1, Options),
-	wxSizer:add(ReqSizer, ReqPanel2, Options),
-	wxSizer:add(OffSizer, OffPanel1, Options),
-	wxSizer:add(OffSizer, OffPanel2, Options),
+	wxSizer:add(RequestSizer, ReqPanel1, Options),
+	wxSizer:add(RequestSizer, ReqPanel2, Options),
+	wxSizer:add(OfferSizer, OffPanel1, Options),
+	wxSizer:add(OfferSizer, OffPanel2, Options),
 
-	wxSizer:add(RequestSizer, ReqSizer, Options),
-	wxSizer:add(OfferSizer, OffSizer, Options),
 	wxSizer:add(MainSizer, RequestSizer, Options),
 	wxSizer:add(MainSizer, OfferSizer, Options),
 	wxSizer:add(SuperSizer, MainSizer, Options),
@@ -270,12 +272,6 @@ cols_to_listctrl(Ctrl, [H|T]) ->
 	{N, S} = H,
 	wxListCtrl:insertColumn(Ctrl, N, S),
 	cols_to_listctrl(Ctrl, T).
-
-create_list_ctrl(Parent, Id, L) ->
-	Panel = wxPanel:new(Parent, []),
-	ListCtrl = wxListCtrl:new(Panel, [{id, Id}, {style, ?wxLC_REPORT bor ?wxLC_SINGLE_SEL}, {size, {500, 300}}]),
-	cols_to_listctrl(ListCtrl, L),
-	{Panel, ListCtrl}.
 
 create_list_ctrl(Parent, L) ->
 	Panel = wxPanel:new(Parent, []),
@@ -501,13 +497,17 @@ handle_event(#wx{id = Id,
 		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
 		OLW = wxWindow:findWindowById(?ID_MY_OFFERS),
 		OL = wx:typeCast(OLW, wxListCtrl),
-		Sel = wxListCtrl:getNextItem(-1, ?wxLIST_NEXT_ALL, ?wxLIST_STATE_SELECTED),
-		format(State#state.log, "Selection: ~p ~n", [Sel]),
-		wxWindow:destory(W0),
+		Sel = wxListCtrl:getNextItem(OL, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}]),
+		if Sel =/= -1 ->
+			Arg = wxListCtrl:getItemText(OL, Sel),
+			format(State#state.log, "Selection: ~p ~n", [Arg]);
+		true -> true
+		end,
+		wxWindow:destroy(W0),
 		{noreply, State};
 	?ID_CLOSE ->
 		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
-		wxWindow:destory(W0),
+		wxWindow:destroy(W0),
 		{noreply, State};
 	_ ->
 		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
