@@ -561,10 +561,11 @@ handle_cast({offer_cancelled, Node}, State) ->
 	arbitrator:update_offers(NewOff),
 	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con, DR}};
-handle_cast({transport_done, Type, Qt}, State) ->
+handle_cast({transport_done, Type, Qt, NumberOfEscorts}, State) ->
 	io:format("Gen_server: transport is done ~n This function should update the resources instead: ~p ~p ~n", [Type, Qt]),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
-	NewShips = dict:update_counter('Cargo ship', 1, Ships),
+	TempShips = dict:update_counter('Cargo ship', 1, Ships),
+	NewShips = dict:update_counter('Escort', NumberOfEscorts, TempShips),
 	NewRes = dict:update_counter(Type, Qt, Res),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	arbitrator:update_resources(dict:to_list(NewRes)),
@@ -602,7 +603,7 @@ terminate(normal, _State) ->
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
-transport(Type, Qt) -> 
-	io:format('Currently transporting ~n'),
+transport(Type, Qt, NumberOfEscorts) -> 
+	arbitrator:format("Currently transporting ~p ~p with ~p escorts ~n", [Qt, Type, NumberOfEscorts]),
 	sleep(5000),
-	gen_server:cast(solar_system, {transport_done, Type, Qt}).
+	gen_server:cast(solar_system, {transport_done, Type, Qt, NumberOfEscorts}).
