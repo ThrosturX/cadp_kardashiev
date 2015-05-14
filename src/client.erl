@@ -29,6 +29,7 @@
 -define(ID_MENUBAR, 116).
 -define(ID_HARVEST_METALS, 117).
 -define(ID_HARVEST_RARE, 118).
+-define(ID_BUILD_SPY, 119).
 
 -define(ID_OFFER_WIN, 200).
 -define(ID_OFFER_R, 201).
@@ -36,6 +37,7 @@
 -define(ID_OFFER_RQ, 203).
 -define(ID_OFFER_OQ, 204).
 -define(ID_ESCORT_SPIN, 205).
+-define(ID_ESCORT_SPIN2, 206).
 
 -define(ID_RETRACT, 210).
 -define(ID_CLOSE, 211).
@@ -76,6 +78,7 @@ init(Options) ->
 	wxMenu:append(Build, ?ID_HARVESTER, "&Harvester"),
 	wxMenu:append(Build, ?ID_CARGO_SHIP, "&Cargo Ship"),
 	wxMenu:append(Build, ?ID_ESCORT, "&Escort"),
+	wxMenu:append(Build, ?ID_BUILD_SPY, "&Spy Drone"),
 	wxMenu:appendSeparator(Build),
 	wxMenu:append(Build, ?ID_DEATH_RAY, "&Death Ray"),
 	Mission = wxMenu:new([]),
@@ -344,12 +347,17 @@ make_offer(State) ->
 	RQ = wxSpinCtrl:new(ReqPanel2, [{id, ?ID_OFFER_RQ}]),
 	OQ = wxSpinCtrl:new(OffPanel2, [{id, ?ID_OFFER_OQ}]),
 
+	EscortPanel = wxPanel:new(Panel, []),
+	EscortSpin = wxSpinCtrl:new(EscortPanel, [{id, ?ID_ESCORT_SPIN2}]),
+	wxSpinCtrl:setRange(EscortSpin, 0, arbitrator:get_escorts()),
+
 	wxSpinCtrl:setRange(RQ, 1, 100),
 	wxSpinCtrl:setRange(OQ, 1, 100),
 
 	CancelPanel = wxPanel:new(Panel, []),
 	ConfirmPanel = wxPanel:new(Panel, []),
 	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	EscortSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Escorts"}]),
 
 	_Cancel = wxButton:new(CancelPanel, ?wxID_DELETE, [{label, "Cancel"}]),
 	_Confirm = wxButton:new(ConfirmPanel, ?wxID_APPLY, [{label, "Confirm"}]),
@@ -357,8 +365,10 @@ make_offer(State) ->
 	wxWindow:connect(Panel, command_button_clicked),
 
 	Options = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}],
+	wxSizer:add(EscortSizer, EscortPanel, Options),
 	wxSizer:add(ButtonSizer, CancelPanel, Options),
 	wxSizer:add(ButtonSizer, ConfirmPanel, Options),
+	wxSizer:add(ButtonSizer, EscortSizer, Options),
 
 	wxSizer:add(RequestSizer, ReqPanel1, Options),
 	wxSizer:add(RequestSizer, ReqPanel2, Options),
@@ -621,10 +631,13 @@ handle_event(#wx{id = Id,
 		H = wxControlWithItems:getStringSelection(OC),
 		Q1 = wxSpinCtrl:getValue(RQC),
 		Q2 = wxSpinCtrl:getValue(OQC),
+		EW = wxWindow:findWindowById(?ID_ESCORT_SPIN2),
+		EC = wx:typeCast(EW, wxSpinCtrl),
+		Escorts = wxSpinCtrl:getValue(EC),
 		wxWindow:destroy(W0),
 		N = node_d(State, "Make offer:"),
 		if N =/= none, N =/= [], W =/= "", H =/= "" ->
-			arbitrator:offer(N, W, Q1, H, Q2);
+			arbitrator:offer(N, W, Q1, H, Q2, Escorts);
 		true -> true
 		end,
 		{noreply, State};
@@ -673,7 +686,7 @@ handle_event(#wx{id = Id,
 		arbitrator:harvest("Rare"),
 		{noreply, State};
 	?ID_HARVEST_METALS -> % shortcut button to harvest metals
-		arbitrator:harvest("Common"),
+		arbitrator:harvest("Metals"),
 		{noreply, State};
 	_ -> % useful for debugging
 		format(State#state.log, "Unhandled button press: #~p ~n", [Id]),
@@ -751,6 +764,9 @@ handle_event(#wx{id = Id,
 			format(State#state.log, "You are now known as: ~p ~n", [Val]);
 		true -> true
 		end,
+		{noreply, State};
+	?ID_BUILD_SPY -> % build a spy drone
+		arbitrator:build("Spy drone"),
 		{noreply, State};
 	?ID_HARVESTER -> % build a harvester
 		arbitrator:build("Harvester"),
