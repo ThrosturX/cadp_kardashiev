@@ -199,9 +199,7 @@ harvesting(Type) ->
 
 %% Death Ray activated send to all nodes reset of resources and ships
 destroy_everything() ->
-	arbitrator:format("Activating Death Ray~n", []),
-	Fun = fun(N) -> send(deathray, {}, N) end,
-	lists:foreach(Fun, nodes()).
+	gen_server:cast(solar_system, deathray).
 
 %% Send to all nodes trade request
 trade_request(TWant, THave) ->
@@ -558,6 +556,16 @@ handle_cast(clear_trade_requests, State) ->
 	NewReq = dict:from_list([]),
 	arbitrator:update_trade_requests(NewReq),
 	{noreply, {Res, Ships, TradeRes, NewReq, Off, Out, Con}};
+%% Activate death ray
+handle_cast(deathray, State) ->
+	{_, _, _, _, _, _, _, Death} = State,
+	if Death == true ->
+		arbitrator:format("Activating Death Ray~n", []),
+		Fun = fun(N) -> send(deathray, {}, N) end,
+		lists:foreach(Fun, nodes()),
+		{noreply, State};
+	true -> {noreply, State}
+	end;
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
