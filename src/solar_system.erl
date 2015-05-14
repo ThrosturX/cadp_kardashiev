@@ -226,17 +226,20 @@ cancel_offer(Node) ->
 	send(coffer, {}, Node).
 
 %% Check if offer is possible then send offer to Node
-offer(Node, TWant, QT, THave, QH) ->
+offer(Node, TWant, QT, THave, QH, NumberOfEscorts) ->
 	io:format("Offer~n"),
 		
 	HasOffer = gen_server:call(solar_system, {have_offer_to, Node}),
 	%io:format("HasOffer: ~p~n", [HasOffer]),
 	if
 		HasOffer =/= true ->
-			Reply = gen_server:call(solar_system, {reserve_resource, THave, QH}),
+			Reply = gen_server:call(solar_system, {reserve_resource, THave, QH, NumberOfEscorts}),
 			if 
 				Reply == noship ->
 					arbitrator:format("There are no available Cargo ships for this mission!~n", []),
+					{ok, Reply};
+				Reply == noescort ->
+					arbitrator:format("There are not enough Escort ships for this mission!~n", []),
 					{ok, Reply};
 				Reply == nores ->
 					arbitrator:format("There are not enough resources for this mission!~n", []),
@@ -255,10 +258,13 @@ accept_offer(Node, NumberOfEscorts) ->
 	io:format("Are resources available?~n"),
 	{THave, Qty, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
 	
-	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty}),
+	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty, NumberOfEscorts}),
 	if
 		Reply == noship ->
 			arbitrator:format("There are no available Cargo ships for this mission!~n", []),
+			{ok, Reply};
+		Reply == noescort ->
+			arbitrator:format("There are not enough Escort ships for this mission!~n", []),
 			{ok, Reply};
 		Reply == nores ->
 			arbitrator:format("There are not enough resources for this mission!~n", []),
@@ -274,6 +280,10 @@ accept_offer(Node, NumberOfEscorts) ->
 					gen_server:cast(solar_system, {offer_cancelled, Node})
 			end
 	end.
+
+%% Returns number of available escorts
+get_number_of_escorts() ->
+	gen_server:call(solar_system, get_number_of_escorts).
 
 %% Returns a list of nodes we have made contact with.
 get_contacts() ->
@@ -377,19 +387,23 @@ handle_call(start_harvest, _From, State) ->
 			{reply, ship, {Res, NewShips, Trade, Req, Off, Out, Con, DR}}
 	end;
 %% checks if the resources and ships needed for the given trade is available
-handle_call({reserve_resource, Type, Qty}, _From, State) ->
+handle_call({reserve_resource, Type, Qty, NumberOfEscorts}, _From, State) ->
 	io:format("Check if enough resources~n"),
 	{Res, Ships, Trade, Req, Off, Out, Con, DR} = State,
 	C = dict:fetch('Cargo ship', Ships),
+	E = dict:fetcg('Escort', Ships),
 	if 
 		C == 0 -> 
 			{reply, noship, State};
+		E < NumberOfEscorts -> 
+			{reply, noescort, State};
 		true -> 
 			T = dict:fetch(Type, Res),
 			if 
 				T >= Qty ->
 					NewRes = dict:update_counter(Type, -Qty, Res),
-					NewShips = dict:update_counter('Cargo ship', -1, Ships),
+					TempShips = dict:update_counter('Cargo ship', -1, Ships),
+					NewShips = dict:update_counter('Escort', NumberOfEscorts, TempShips),
 					NewTrade = dict:update_counter(Type, Qty, Trade),
 					arbitrator:update_resources(dict:to_list(NewRes)),
 					arbitrator:update_ships(dict:to_list(NewShips)),
@@ -425,6 +439,10 @@ handle_call({Node, accept_offer, _Msg}, _From, State) ->
 		true ->
 			{reply, cancel, State}
 	end;
+handle_call(get_number_of_escorts, _From, State) ->
+	{_, Ships, _, _, _, _, _, _} = State,
+	Nescorts = dict:fetch('Escort', Ships),
+	{reply, Nescorts, State};
 handle_call(get_contacts, _From, State) ->
 	{_, _, _, _, _, _, Con, _} = State,
 	Contacts = dict:fetch_keys(Con),
