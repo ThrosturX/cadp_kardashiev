@@ -34,7 +34,8 @@
 
 -define(SERVER, ?MODULE).
 
--define(MAX_HARVEST, 1000).
+-define(MAX_HARVEST_METAL, 15).
+-define(MAX_HARVEST_RARE, 3).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
 
@@ -360,7 +361,7 @@ init([]) ->
 	% OutOffers: Offers to other nodes
 	% Contacts: Nodes we have made contact with
 	Resources = dict:from_list([{'Metals', 10}, {'Water', 10}, {'Carbon', 10}]),
-	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}, {'Spy drone', 1}]),
+	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}, {'Spy drone', 0}]),
 	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
