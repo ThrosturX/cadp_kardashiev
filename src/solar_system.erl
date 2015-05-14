@@ -80,24 +80,24 @@ randomSleep(T) ->
 randomSleep(N,M) ->
 	sleep(random(N,M)).
 
-% returns the resources formatted for the arbitrator
-%list_resources(State) -> {Res, _, _, _, _, _} = State, dict:to_list(Res).
-%list_ships(State) -> {_, Ships, _, _, _, _} = State, dict:to_list(Ships).
-	
+%% Starts the solar system Node.	
 start_link() ->
 	spawn(solar_system, spawner, []),
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+%% Stops the solar system Node.
 stop() ->
     gen_server:cast(?SERVER, stop).
 
+%% Sets the Nodes name.
 set_node_name(Name) ->
 	%io:format("Setting node name to: ~w~n", [Name]),
 	net_kernel:start([Name, longnames]),
 	erlang:set_cookie(node(), kaka). 
-	
+
+%% Print server state.
 print() ->
-	gen_server:call(solar_system, resources).
+	gen_server:call(solar_system, print_state).
 
 resource_types() ->
 	["Iron", "Food", "Gas"].
@@ -227,7 +227,7 @@ cancel_offer(Node) ->
 	gen_server:cast(solar_system, {cOutOffer, Node}),
 	send(coffer, {}, Node).
 
-%% Check if offer is possible then send offer to Node
+%% Check if offer is possible then send offer to Node.
 offer(Node, TWant, QT, THave, QH) ->
 	io:format("Offer~n"),
 		
@@ -252,6 +252,7 @@ offer(Node, TWant, QT, THave, QH) ->
 			arbitrator:format("Outstanding offer to ~p present.~n", [Node])
 	end.
 	
+%% Accept offer from Node if possible.
 accept_offer(Node) ->
 	% First check if resources are available
 	io:format("Are resources available?~n"),
@@ -359,8 +360,8 @@ handle_call({build, Iron, Food, Gas}, _From, State) ->
 		true ->
 			{reply, build_nores, State}
 	end;	
-%% prints the resources and ships available
-handle_call(resources, _From, State) ->
+%% prints the server state
+handle_call(print_state, _From, State) ->
 	io:format("State is: ~p~n", [State]),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	io:format("Resources: ~p~n", [dict:to_list(Res)]),
@@ -485,7 +486,7 @@ handle_cast({Node, msg, Msg}, State) ->
 	arbitrator:format("!!! Private message from ~w: ~p !!!~n", [Node, Msg]),
 	{noreply, {Resources, Ships, Trade, Req, Off, Out, NewCon, DR, System}};
 handle_cast({_Node, deathray, {}}, State) ->
-	io:format("Death ray :(~n"),
+	io:format("You have been destroyed by the death ray :(~n"),
 	{_, _, _, Req, Off, Out, Con, _, System} = State,
 	NewRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
 	NewShips = dict:from_list([{'Cargo ship', 0}, {'Harvester', 0}, {'Escort', 0}]),
