@@ -469,7 +469,7 @@ dialog_harvest_rsrc(State) ->
 	true -> Choice = none
 	end,
 	wxDialog:destroy(Dialog),
-	format(State#state.log, "~p ~n", [Choice]),
+	%format(State#state.log, "~p ~n", [Choice]),
 	Choice.
 
 node_d(State, Str) -> 
