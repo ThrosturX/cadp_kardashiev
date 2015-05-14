@@ -22,6 +22,9 @@
 -define(ID_IDENTIFY, 110).
 -define(ID_CANCEL_OFFER, 111).
 -define(ID_SEND_OFFER, 112).
+-define(ID_ACTIVATE_RAY, 113).
+-define(ID_SPY, 114).
+-define(ID_CLEAR_REQUESTS, 115).
 
 
 start() ->
@@ -55,15 +58,19 @@ init(Options) ->
 	Mission = wxMenu:new([]),
 	wxMenu:append(Mission, ?ID_HARVEST, "&Harvest"),
 	wxMenu:append(Mission, ?ID_TRADE, "&Trade"),
+	wxMenu:append(Mission, ?ID_SPY, "Send &Spy"),
+	wxMenu:append(Mission, ?ID_ACTIVATE_RAY, "Activate &Death Ray"),
 	Comms	= wxMenu:new([]),
 	wxMenu:append(Comms, ?ID_BROADCAST, "&Broadcast"),
 	wxMenu:append(Comms, ?ID_SEND_OFFER, "Send &Offer"),
 	wxMenu:append(Comms, ?ID_CANCEL_OFFER, "&Cancel Offers"),
 	wxMenu:appendSeparator(Comms),
+	wxMenu:append(Comms, ?ID_CLEAR_REQUESTS, "Dismiss &Demands"),
+	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_MESSAGE, "&Message"),
 	wxMenu:appendSeparator(Comms),
 	wxMenu:append(Comms, ?ID_CONNECT, "Co&nnect"),
-	wxMenu:append(Comms, ?ID_IDENTIFY, "&Set Name"),
+	wxMenu:append(Comms, ?ID_IDENTIFY, "Se&t Name"),
 	Game	= wxMenu:new([]),
 	wxMenu:append(Game, ?wxID_ABOUT, "&About"),
 	wxMenu:appendSeparator(Game),
@@ -96,7 +103,7 @@ init(Options) ->
 	ResourceSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Resources"}]),
 	ShipSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Ships"}]),
 
-	ContactSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Contacts"}]),
+	ContactSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Demands"}]),
 	OfferSizer = wxStaticBoxSizer:new(?wxVERTICAL, MainPanel, [{label, "Offers"}]),
 
 	SzOpts = [{border, 8}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND }],
@@ -628,6 +635,9 @@ handle_event(#wx{id = Id,
 		{noreply, State};
 	?ID_TRADE ->
 		accept_offer(State),
+		{noreply, State};
+	?ID_CLEAR_REQUESTS ->
+		arbitrator:clear_trade_requests(),
 		{noreply, State};
 	?ID_IDENTIFY ->
 		Val = identify_d(State),
