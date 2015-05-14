@@ -160,14 +160,14 @@ init(Options) ->
 -define(ID_CLOSE, 211).
 -define(ID_MY_OFFERS, 212).
 
--define(ID_ACCEPT, 220)
--define(ID_ACCEPT_OFFER, 221)
+-define(ID_ACCEPT, 220).
+-define(ID_ACCEPT_OFFER, 221).
 
 accept_offer(State) -> 
 	Frame = wxFrame:new(State#state.win, ?ID_TRADE, "Send cargo ship", 
 						[{style, 
 						?wxCAPTION bor
-						?wxCLODE_BOX bor
+						?wxCLOSE_BOX bor
 						?wxSTAY_ON_TOP},
 						{size, {700,400}}]),
 	Offers = arbitrator:get_incoming_offers(),
