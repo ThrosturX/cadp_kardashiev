@@ -251,6 +251,7 @@ make_offer(State) ->
 							?wxSTAY_ON_TOP
 						}]),
 
+	% TODO? change getters
 	Avail = arbitrator:resource_types(),
 	Owned = arbitrator:resource_types(),
 
@@ -273,8 +274,8 @@ make_offer(State) ->
 	RQ = wxSpinCtrl:new(ReqPanel2, [{id, ?ID_OFFER_RQ}]),
 	OQ = wxSpinCtrl:new(OffPanel2, [{id, ?ID_OFFER_OQ}]),
 
-	wxSpinCtrl:setRange(RQ, 1, 10),
-	wxSpinCtrl:setRange(OQ, 1, 10),
+	wxSpinCtrl:setRange(RQ, 1, 100),
+	wxSpinCtrl:setRange(OQ, 1, 100),
 
 	CancelPanel = wxPanel:new(Panel, []),
 	ConfirmPanel = wxPanel:new(Panel, []),
