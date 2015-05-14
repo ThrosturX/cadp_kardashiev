@@ -398,7 +398,7 @@ init([]) ->
 	% DR: whether we have a death ray or not
 	% System: whether the solar system has water or carbon
 	Resources = dict:from_list([{'Metals', 25}, {'Water', 15}, {'Carbon', 15}]),
-	Ships = dict:from_list([{'Cargo ship', 1}, {'Harvester', 2}, {'Escort', 0}, {'Spy drone', 0}]),
+	Ships = dict:from_list(lists:reverse([{'Cargo ship', 1}, {'Harvester', 2}, {'Escort', 0}, {'Spy drone', 0}])),
 	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
@@ -755,7 +755,7 @@ attacked_by_pirates(NumberOfEscorts) ->
 	Pirates = random(0, 100),
 	Strength = random(0, 3),
 
-	if Pirates > 75, Strength > NumberOfEscorts ->
+	if Pirates > 85, Strength > NumberOfEscorts ->
 		RemainingEscorts = lists:max([0, NumberOfEscorts - Strength]);
 	   Pirates > 50, Strength == NumberOfEscorts; Strength == 3 ->
 		   RemainingEscorts = lists:max([0, NumberOfEscorts - 1]);
