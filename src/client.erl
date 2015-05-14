@@ -766,7 +766,7 @@ handle_event(#wx{id = Id,
 		end,
 		{noreply, State};
 	?ID_BUILD_SPY -> % build a spy drone
-		abritrator:build("Spy drone"),
+		arbitrator:build("Spy drone"),
 		{noreply, State};
 	?ID_HARVESTER -> % build a harvester
 		arbitrator:build("Harvester"),
