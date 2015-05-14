@@ -754,9 +754,9 @@ attacked_by_pirates(NumberOfEscorts) ->
 	Pirates = random(0, 100),
 	Strength = random(0, 3),
 
-	if Pirates > 85, Strength > NumberOfEscorts ->
+	if Pirates > 85, Strength > NumberOfEscorts; Strength == 3 ->
 		RemainingEscorts = lists:max([0, NumberOfEscorts - Strength]);
-	   Pirates > 5, Strength == NumberOfEscorts ->
+	   Pirates > 50, Strength == NumberOfEscorts ->
 		   RemainingEscorts = lists:max([0, NumberOfEscorts - 1]);
 	   true -> RemainingEscorts = NumberOfEscorts
 	end,
