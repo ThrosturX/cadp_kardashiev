@@ -30,6 +30,8 @@
 -define(ID_HARVEST_METALS, 117).
 -define(ID_HARVEST_RARE, 118).
 -define(ID_BUILD_SPY, 119).
+-define(ID_BUILD_HARVESTER, 120).
+-define(ID_BUILD_CARGO_SHIP, 121).
 
 -define(ID_OFFER_WIN, 200).
 -define(ID_OFFER_R, 201).
@@ -144,12 +146,18 @@ init(Options) ->
 	ListSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	HarvestSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, MainPanel, [{label, "Harvest..."}]),
+	BuildSizer = wxStaticBoxSizer:new(?wxHORIZONTAL, MainPanel, [{label, "Build..."}]),
 
 	HarvestButtonPanelM = wxPanel:new(MainPanel, []),
 	HarvestButtonPanelR = wxPanel:new(MainPanel, []),
+	BuildButtonPanelH = wxPanel:new(MainPanel, []),
+	BuildButtonPanelC = wxPanel:new(MainPanel, []),
 
 	wxButton:new(HarvestButtonPanelM, ?ID_HARVEST_METALS, [{label, "Metals"}]),
 	wxButton:new(HarvestButtonPanelR, ?ID_HARVEST_RARE, [{label, "Precious Materials"}]),
+
+	wxButton:new(BuildButtonPanelH, ?ID_BUILD_HARVESTER, [{label, "Harvester"}]),
+	wxButton:new(BuildButtonPanelC, ?ID_BUILD_CARGO_SHIP, [{label, "Cargo Ship"}]),
 
 	wxWindow:connect(MainPanel, command_button_clicked),
 
@@ -173,7 +181,11 @@ init(Options) ->
 	wxSizer:add(HarvestSizer, HarvestButtonPanelM, SzOpts),
 	wxSizer:add(HarvestSizer, HarvestButtonPanelR, SzOpts),
 
+	wxSizer:add(BuildSizer, BuildButtonPanelH, SzOpts),
+	wxSizer:add(BuildSizer, BuildButtonPanelC, SzOpts),
+
 	wxSizer:add(ButtonSizer, HarvestSizer, SzOpts),
+	wxSizer:add(ButtonSizer, BuildSizer, SzOpts),
 
 	wxSizer:add(MainSizer, ListSizer, SzOpts),
 	wxSizer:add(MainSizer, ButtonSizer, SzOpts),
@@ -682,6 +694,12 @@ handle_event(#wx{id = Id,
 	?ID_CLOSE -> % user closed the cancel offer window
 		W0 = wxWindow:findWindowById(?ID_CANCEL_OFFER),
 		wxWindow:destroy(W0),
+		{noreply, State};
+	?ID_BUILD_HARVESTER -> % build a harvester
+		arbitrator:build("Harvester"),
+		{noreply, State};
+	?ID_BUILD_CARGO_SHIP -> % build a cargo ship
+		arbitrator:build("Cargo ship"),
 		{noreply, State};
 	?ID_HARVEST_RARE -> % shortcut button to harvest metals
 		arbitrator:harvest("Rare"),
