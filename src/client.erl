@@ -368,7 +368,7 @@ make_offer(State) ->
 	wxSizer:add(EscortSizer, EscortPanel, Options),
 	wxSizer:add(ButtonSizer, CancelPanel, Options),
 	wxSizer:add(ButtonSizer, ConfirmPanel, Options),
-	wxSizer:add(ButtonSizer, EscortSizer, Options),
+	wxSizer:add(ButtonSizer, EscortSizer),
 
 	wxSizer:add(RequestSizer, ReqPanel1, Options),
 	wxSizer:add(RequestSizer, ReqPanel2, Options),

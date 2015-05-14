@@ -12,15 +12,16 @@
 		send/3,
 		trade_request/2,
 		cancel_request/2, 
-		offer/5,
+		offer/6,
 		build/1, 
 		build_process/1,
 		ship_types/0, 
 		resource_types/0,
 		set_node_name/1,
-		accept_offer/1, 
+		accept_offer/2, 
 		cancel_offer/1, 
-		transport/2,
+		transport/3,
+		get_number_of_escorts/0,
 		get_contacts/0,
 		get_outgoing_offers/0,
 		get_incoming_offers/0,
@@ -250,19 +251,21 @@ cancel_offer(Node) ->
 	gen_server:cast(solar_system, {cOutOffer, Node}),
 	send(coffer, {}, Node).
 
-% Sends offer to 'Node'
-% If we don't have enough resources or a cargo ship, nothing happens
-offer(Node, TWant, QT, THave, QH) ->
+%% Check if offer is possible then send offer to Node
+offer(Node, TWant, QT, THave, QH, NumberOfEscorts) ->
 	io:format("Offer~n"),
 		
 	HasOffer = gen_server:call(solar_system, {have_offer_to, Node}),
 	%io:format("HasOffer: ~p~n", [HasOffer]),
 	if
 		HasOffer =/= true ->
-			Reply = gen_server:call(solar_system, {reserve_resource, THave, QH}),
+			Reply = gen_server:call(solar_system, {reserve_resource, THave, QH, NumberOfEscorts}),
 			if 
 				Reply == noship ->
 					arbitrator:format("There are no available Cargo ships for this mission!~n", []),
+					{ok, Reply};
+				Reply == noescort ->
+					arbitrator:format("There are not enough Escort ships for this mission!~n", []),
 					{ok, Reply};
 				Reply == nores ->
 					arbitrator:format("There are not enough resources for this mission!~n", []),
@@ -270,22 +273,24 @@ offer(Node, TWant, QT, THave, QH) ->
 				true ->
 					arbitrator:format("Offer sent to ~p: ~p ~p for ~p ~p~n", [Node, THave, QH, TWant, QT]),
 					send(offer, {TWant, QT, THave, QH}, Node),
-					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH}})
+					gen_server:cast(solar_system, {Node, outoffer, {TWant, QT, THave, QH, NumberOfEscorts}})
 			end;
 		true ->
 			arbitrator:format("Outstanding offer to ~p present.~n", [Node])
 	end.
-	
-%% Accept offer from Node if possible.
-accept_offer(Node) ->
+%% Accept offer from Node if possible.	
+accept_offer(Node, NumberOfEscorts) ->
 	% First check if resources are available
 	io:format("Are resources available?~n"),
 	{THave, Qty, _, _} = gen_server:call(solar_system, {get_offer_from, Node}),
 	
-	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty}),
+	Reply = gen_server:call(solar_system, {reserve_resource, THave, Qty, NumberOfEscorts}),
 	if
 		Reply == noship ->
 			arbitrator:format("There are no available Cargo ships for this mission!~n", []),
+			{ok, Reply};
+		Reply == noescort ->
+			arbitrator:format("There are not enough Escort ships for this mission!~n", []),
 			{ok, Reply};
 		Reply == nores ->
 			arbitrator:format("There are not enough resources for this mission!~n", []),
@@ -296,11 +301,15 @@ accept_offer(Node) ->
 			if
 				ReplyFromOther == confirm ->
 					%sleep, need to spawn if so.
-					gen_server:cast(solar_system, {offer_confirmed, Node});
+					gen_server:cast(solar_system, {offer_confirmed, Node, NumberOfEscorts});
 				true ->
 					gen_server:cast(solar_system, {offer_cancelled, Node})
 			end
 	end.
+
+%% Returns number of available escorts
+get_number_of_escorts() ->
+	gen_server:call(solar_system, get_number_of_escorts).
 
 %% Returns a list of nodes we have made contact with.
 get_contacts() ->
@@ -450,19 +459,23 @@ handle_call({start_harvest, Type}, _From, State) ->
 		end
 	end;
 %% checks if the resources and ships needed for the given trade is available
-handle_call({reserve_resource, Type, Qty}, _From, State) ->
+handle_call({reserve_resource, Type, Qty, NumberOfEscorts}, _From, State) ->
 	io:format("Check if enough resources~n"),
 	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
 	C = dict:fetch('Cargo ship', Ships),
+	E = dict:fetcg('Escort', Ships),
 	if 
 		C == 0 -> 
 			{reply, noship, State};
+		E < NumberOfEscorts -> 
+			{reply, noescort, State};
 		true -> 
 			T = dict:fetch(Type, Res),
 			if 
 				T >= Qty ->
 					NewRes = dict:update_counter(Type, -Qty, Res),
-					NewShips = dict:update_counter('Cargo ship', -1, Ships),
+					TempShips = dict:update_counter('Cargo ship', -1, Ships),
+					NewShips = dict:update_counter('Escort', NumberOfEscorts, TempShips),
 					NewTrade = dict:update_counter(Type, Qty, Trade),
 					arbitrator:update_resources(dict:to_list(NewRes)),
 					arbitrator:update_ships(dict:to_list(NewShips)),
@@ -486,9 +499,9 @@ handle_call({Node, accept_offer, _Msg}, _From, State) ->
 	ContainsNode = dict:is_key(Node, Out),
 	if
 		ContainsNode == true ->
-			[{TGot, QG, THad, QH}] = dict:fetch(Node, Out),
-	
-			spawn(solar_system, transport, [TGot, QG]),
+			[{TGot, QG, THad, QH, NumberOfEscorts}] = dict:fetch(Node, Out),
+			
+			spawn(solar_system, transport, [TGot, QG, NumberOfEscorts]),
 			
 			%% Update dictionaries
 			NewOut = dict:erase(Node, Out), 
@@ -498,6 +511,10 @@ handle_call({Node, accept_offer, _Msg}, _From, State) ->
 		true ->
 			{reply, cancel, State}
 	end;
+handle_call(get_number_of_escorts, _From, State) ->
+	{_, Ships, _, _, _, _, _, _, _} = State,
+	Nescorts = dict:fetch('Escort', Ships),
+	{reply, Nescorts, State};
 handle_call(get_contacts, _From, State) ->
 	{_, _, _, _, _, _, Con, _, _} = State,
 	Contacts = dict:fetch_keys(Con),
@@ -509,8 +526,8 @@ handle_call(get_incoming_offers, _From, State) ->
 	{_, _, _, _, Off, _, _, _, _} = State,
 	{reply, Off, State};
 handle_call(reserve_drone, _From, State) ->
-	io:format("Reserver drone if available~n"),
-	{Res, Ships, Trade, Req, Off, Out, Con, DR} = State,
+	io:format("Reserve drone if available~n"),
+	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
 	S = dict:fetch('Spy drone', Ships),
 	if 
 		S == 0 -> 
@@ -518,11 +535,11 @@ handle_call(reserve_drone, _From, State) ->
 		true -> 
 			NewShips = dict:update_counter('Spy drone', -1, Ships),
 			arbitrator:update_ships(dict:to_list(NewShips)),
-			{reply, ok, {Res, NewShips, Trade, Req, Off, Out, Con, DR}}
+			{reply, ok, {Res, NewShips, Trade, Req, Off, Out, Con, DR, System}}
 	end;
 handle_call({_Node, spy, _Msg}, _From, State) ->
 	%% Check if the key Node exists in out offers, if so confirm trade, otherwise cancel
-	{Res, Ships, _, _, _, _, _, _} = State,
+	{Res, Ships, _, _, _, _, _, _, _} = State,
 	{reply, {Res, Ships}, State};
 handle_call(_Msg, _From, State) ->
 	{reply, [], State}.
@@ -600,8 +617,9 @@ handle_cast({Node, offer, {TWant, QT, THave, QH}}, State) ->
 handle_cast({cOutOffer, Node}, State) ->
 	io:format("Cancel our own offer ~n"),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
-	[{_, _, THave, Qt}] = dict:fetch(Node, Out),
-	NShips = dict:update_counter('Cargo ship', 1, Ships),
+	[{_, _, THave, Qt, NumberOfEscorts}] = dict:fetch(Node, Out),
+	TShips = dict:update_counter('Cargo ship', 1, Ships),
+	NShips = dict:update_counter('Escort', NumberOfEscorts, TShips),
 	NOut = dict:erase(Node, Off),
 	NRes = dict:update_counter(THave, Qt, Res),
 	NTradeRes = dict:update_counter(THave, -Qt, TradeRes),
@@ -617,16 +635,16 @@ handle_cast({Node, coffer, _}, State) ->
 	arbitrator:update_offers(NOff),
 	{noreply, {Res, Ships, TradeRes, Req, NOff, Out, Con, DR, System}};
 %% adds an outgoing offer to the list
-handle_cast({Node, outoffer, {TWant, QT, THave, QH}}, State) ->
+handle_cast({Node, outoffer, {TWant, QT, THave, QH, NumberOfEscorts}}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	Fun = fun(Old) -> Old end,
-	NOut = dict:update(Node, Fun, [{TWant, QT, THave, QH}], Out),
+	NOut = dict:update(Node, Fun, [{TWant, QT, THave, QH, NumberOfEscorts}], Out),
 	{noreply, {Res, Ships, TradeRes, Req, Off, NOut, Con, DR, System}};	
-handle_cast({offer_confirmed, Node}, State) ->
+handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	[{THad, QH, TGot, QG}] = dict:fetch(Node, Off),
 	
-	spawn(solar_system, transport, [TGot, QG]),
+	spawn(solar_system, transport, [TGot, QG, NumberOfEscorts]),
 	
 	%% Update dictionaries
 	NewOff = dict:erase(Node, Off), 
@@ -650,10 +668,11 @@ handle_cast({offer_cancelled, Node}, State) ->
 	arbitrator:update_offers(NewOff),
 	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con, DR, System}};
-handle_cast({transport_done, Type, Qt}, State) ->
+handle_cast({transport_done, Type, Qt, NumberOfEscorts}, State) ->
 	io:format("Gen_server: transport is done ~n This function should update the resources instead: ~p ~p ~n", [Type, Qt]),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
-	NewShips = dict:update_counter('Cargo ship', 1, Ships),
+	TempShips = dict:update_counter('Cargo ship', 1, Ships),
+	NewShips = dict:update_counter('Escort', NumberOfEscorts, TempShips),
 	NewRes = dict:update_counter(Type, Qt, Res),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	arbitrator:update_resources(dict:to_list(NewRes)),
@@ -678,10 +697,10 @@ handle_cast(deathray, State) ->
 		{noreply, State}
 	end;
 handle_cast(return_drone, State) ->
-	{Res, Ships, TradeRes, Req, Off, Out, Con, DR} = State,
+	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	NewShips = dict:update_counter('Spy drone', 1, Ships),
 	arbitrator:update_ships(dict:to_list(NewShips)),
-	{noreply, {Res, NewShips, TradeRes, Req, Off, Out, Con, DR}};
+	{noreply, {Res, NewShips, TradeRes, Req, Off, Out, Con, DR, System}};
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
@@ -695,3 +714,11 @@ terminate(normal, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
+<<<<<<< HEAD
+=======
+
+transport(Type, Qt, NumberOfEscorts) -> 
+	arbitrator:format("Currently transporting ~p ~p with ~p escorts ~n", [Qt, Type, NumberOfEscorts]),
+	sleep(5000),
+	gen_server:cast(solar_system, {transport_done, Type, Qt, NumberOfEscorts}).
+>>>>>>> b4cb17929216cf4f3a4b71e2632a7d2a6a7df274
