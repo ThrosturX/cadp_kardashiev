@@ -33,7 +33,7 @@
 
 -define(SERVER, ?MODULE).
 
--define(MAX_HARVEST, 1000).
+-define(MAX_HARVEST, 10).
 -define(MAX_HARVEST_TIME, 4000).
 -define(MIN_HARVEST_TIME, 2000).
 
