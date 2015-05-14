@@ -16,6 +16,7 @@
 	harvest/1,
 	build/1,
 	built_death_ray/0,
+	destroy_everything/0,
 	resource_types/0,
 	ship_types/0,
 	send_private_message/2,
