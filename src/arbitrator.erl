@@ -15,6 +15,7 @@
 	accept_offer/1,
 	harvest/1,
 	build/1,
+	built_death_ray/0,
 	resource_types/0,
 	ship_types/0,
 	send_private_message/2,
@@ -41,7 +42,7 @@ format(S, P) ->
 	io:format(S,P),
 	client:notify({format, S, P}).
 die() -> client:notify(die).
-built_death_ray() -> ok.
+built_death_ray() -> client:notify({acquire, death_ray}).
 
 
 %%%% GUI to Solar System
