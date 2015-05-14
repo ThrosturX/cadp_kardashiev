@@ -592,6 +592,12 @@ handle_event(#wx{id = Id,
 		format(State#state.log, "Unhandled event: #~p ~n", [Id]),
 		{noreply, State}
 	end;
+%handle_event(#wx{obj = Panel,
+%		event = #wxMouse{type = right_up}},
+%		State = #state{menu = Menu}) ->
+	%% Open the popup menu
+%	wxWindow:popupMenu(Panel, Menu),
+%	{noreply, State};
 handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
 	io:format("~p Closing window ~n",[self()]),
 	ok = wxFrame:setStatusText(Frame, "Closing...",[]),
