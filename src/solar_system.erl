@@ -18,7 +18,7 @@
 		ship_types/0, 
 		resource_types/0,
 		set_node_name/1,
-		accept_offer/1, 
+		accept_offer/2, 
 		cancel_offer/1, 
 		transport/2,
 		get_contacts/0,
@@ -541,7 +541,7 @@ handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	%% Update dictionaries
 	NewOff = dict:erase(Node, Off), 
 	NewTradeRes = dict:update_counter(THad, -QH, TradeRes),
-	NewShips = dict:update_counter('Escort', -NumberOfEscorts, Ships)
+	NewShips = dict:update_counter('Escort', -NumberOfEscorts, Ships),
 
 	arbitrator:update_offers(NewOff),
 	
