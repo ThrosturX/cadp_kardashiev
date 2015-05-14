@@ -694,7 +694,7 @@ handle_cast({transport_lost}, State) ->
 	io:format("A transport was lost."),
 	Msg = "It's been a while since a trade mission started and the cargo ship has not returned. Perhaps it has been lost?",
 	T = random(10000, 900000),
-	abritrator:lost_cargo(T, Msg),
+	arbitrator:lost_cargo(T, Msg),
 	{noreply, State};
 handle_cast({transport_done, Type, Qt, NumberOfEscorts}, State) ->
 	io:format("Gen_server: transport is done ~n This function should update the resources instead: ~p ~p ~n", [Type, Qt]),
@@ -747,10 +747,10 @@ transport_delay() ->
 	randomSleep(?MIN_TRANSPORT_TIME, ?MAX_TRANSPORT_TIME).
 
 attacked_by_pirates(NumberOfEscorts) ->
-	Pirates = random(0, 10),
+	Pirates = random(0, 100),
 	Strength = random(0, 10),
 
-	if Pirates > 7, Strength > NumberOfEscorts ->
+	if Pirates > 75, Strength > NumberOfEscorts ->
 		RemainingEscorts = lists:max([0, NumberOfEscorts - Strength]);
 	   Pirates > 5, Strength == NumberOfEscorts ->
 		   RemainingEscorts = lists:max([0, NumberOfEscorts - 1]);
