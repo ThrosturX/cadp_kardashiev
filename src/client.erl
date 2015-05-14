@@ -132,9 +132,9 @@ init(Options) ->
 	RSizer = wxBoxSizer:new(?wxVERTICAL),
 
 	% create list controls and put them into panels for the sizers
-	{ResourcePanel, Resources} = create_list_ctrl(MainPanel, [{0, "Resource"}, {1, "Quantity"}], 200, 100),
+	{ResourcePanel, Resources} = create_list_ctrl(MainPanel, [{0, "Resource"}, {1, "Quantity"}], 200, 120),
 	{ShipPanel, Ships} = create_list_ctrl(MainPanel, [{0, "Ship"}, {1, "Quantity"}], 200, 150),
-	{ContactPanel, Contacts} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Have"}, {2, "Want"}], 400, 100),
+	{ContactPanel, Contacts} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Have"}, {2, "Want"}], 400, 120),
 	{OfferPanel, Offers} = create_list_ctrl(MainPanel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
 
 	% create labelled sizers to display informative names of the lists inside them
