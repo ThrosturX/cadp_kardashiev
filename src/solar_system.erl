@@ -45,18 +45,18 @@
 -define(ESCORT_FACTOR, 4).
 -define(HARVESTER_FACTOR, 1).
 
--define(CARGO_SHIP_IRON, 30).
--define(CARGO_SHIP_FOOD, 30).
--define(CARGO_SHIP_GAS, 30).
--define(DEATH_RAY_IRON, 1000).
--define(DEATH_RAY_FOOD, 1000).
--define(DEATH_RAY_GAS, 1000).
--define(ESCORT_IRON, 60).
--define(ESCORT_FOOD, 60).
--define(ESCORT_GAS, 60).
--define(HARVESTER_IRON, 10).
--define(HARVESTER_FOOD, 10).
--define(HARVESTER_GAS, 10).
+-define(CARGO_SHIP_METALS, 30).
+-define(CARGO_SHIP_WATER, 30).
+-define(CARGO_SHIP_CARBON, 30).
+-define(DEATH_RAY_METALS, 1000).
+-define(DEATH_RAY_WATER, 1000).
+-define(DEATH_RAY_CARBON, 1000).
+-define(ESCORT_METALS, 60).
+-define(ESCORT_WATER, 60).
+-define(ESCORT_CARBON, 60).
+-define(HARVESTER_METALS, 10).
+-define(HARVESTER_WATER, 10).
+-define(HARVESTER_CARBON, 10).
 
 random(N) ->
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
@@ -66,9 +66,10 @@ random(N) ->
 
 random(N,M) -> 
 	%<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-	%random:seed(A,B,C),
-	random:seed(now()),
-	N + random:uniform(M-N).
+	{A, B, C} = now(),
+	random:seed(A,B,C),
+	%random:seed(now()),
+	N + random:uniform(M+1) - 1.
 
 sleep(T) ->
 	receive
@@ -100,7 +101,7 @@ print() ->
 	gen_server:call(solar_system, print_state).
 
 resource_types() ->
-	["Iron", "Food", "Gas"].
+	["Metals", "Water", "Carbon"].
 
 ship_types() ->
 	["Escort", "Harvester", "Cargo ship"].
@@ -116,41 +117,41 @@ build_process(Type) ->
 	%arbitrator:format("Build: ~p ~n", [SType]),
 	if
 		Type == 'Death Ray' ->
-			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_IRON, ?DEATH_RAY_FOOD, ?DEATH_RAY_GAS}),
+			Reply = gen_server:call(solar_system, {build, ?DEATH_RAY_METALS, ?DEATH_RAY_WATER, ?DEATH_RAY_CARBON}),
 			if
 				Reply == build_ok ->
 					building(Type),
 					arbitrator:built_death_ray();
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("DEATH RAY: ~p Iron, ~p Food, ~p Gas~n", [?DEATH_RAY_IRON, ?DEATH_RAY_FOOD, ?DEATH_RAY_GAS])
+					arbitrator:format("DEATH RAY: ~p Metals, ~p Water, ~p Carbon~n", [?DEATH_RAY_METALS, ?DEATH_RAY_WATER, ?DEATH_RAY_CARBON])
 			end;
 		Type == 'Harvester' ->
-			Reply = gen_server:call(solar_system, {build, ?HARVESTER_IRON, ?HARVESTER_FOOD, ?HARVESTER_GAS}),
+			Reply = gen_server:call(solar_system, {build, ?HARVESTER_METALS, ?HARVESTER_WATER, ?HARVESTER_CARBON}),
 			if
 				Reply == build_ok ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Harvester: ~p Iron, ~p Food, ~p Gas~n", [?HARVESTER_IRON, ?HARVESTER_FOOD, ?HARVESTER_GAS])
+					arbitrator:format("Harvester: ~p Metals, ~p Water, ~p Carbon~n", [?HARVESTER_METALS, ?HARVESTER_WATER, ?HARVESTER_CARBON])
 			end;
 		Type == 'Cargo ship' ->
-			Reply = gen_server:call(solar_system, {build, ?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS}),
+			Reply = gen_server:call(solar_system, {build, ?CARGO_SHIP_METALS, ?CARGO_SHIP_WATER, ?CARGO_SHIP_CARBON}),
 			if
 				Reply == build_ok ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Cargo ship: ~p Iron, ~p Food, ~p Gas~n", [?CARGO_SHIP_IRON, ?CARGO_SHIP_FOOD, ?CARGO_SHIP_GAS])
+					arbitrator:format("Cargo ship: ~p Metals, ~p Water, ~p Carbon~n", [?CARGO_SHIP_METALS, ?CARGO_SHIP_WATER, ?CARGO_SHIP_CARBON])
 			end;
 		Type == 'Escort' ->
-			Reply = gen_server:call(solar_system, {build, ?ESCORT_IRON, ?ESCORT_FOOD, ?ESCORT_GAS}),
+			Reply = gen_server:call(solar_system, {build, ?ESCORT_METALS, ?ESCORT_WATER, ?ESCORT_CARBON}),
 			if
 				Reply == build_ok ->
 					building(Type);
 				true ->
 					arbitrator:format("Not enough resources~n", []),
-					arbitrator:format("Escort ship: ~p Iron, ~p Food, ~p Gas~n", [?ESCORT_IRON, ?ESCORT_FOOD, ?ESCORT_GAS])
+					arbitrator:format("Escort ship: ~p Metals, ~p Water, ~p Carbon~n", [?ESCORT_METALS, ?ESCORT_WATER, ?ESCORT_CARBON])
 			end;
 		true ->
 			io:format("Unkown Type: ~p~n", [SType]),
@@ -180,7 +181,7 @@ building(Type) ->
 % Start a harvesting operation on a location of type 'Type'
 % If no harvesters are available, nothing happens
 harvest(Type) ->
-	IsResource = lists:member(Type, ['Iron', 'Food', 'Gas']),
+	IsResource = lists:member(Type, ['Metals', 'Water', 'Carbon']),
 	if IsResource == true ->
 		io:format("Harvest~n"),
 		Reply = gen_server:call(solar_system, {start_harvest, Type}),
@@ -209,7 +210,7 @@ destroy_everything() ->
 
 %% Send to all nodes trade request
 trade_request(TWant, THave) ->
-	IsResource = lists:member(TWant, ['Iron', 'Food', 'Gas']) and lists:member(THave, ['Iron', 'Food', 'Gas']),
+	IsResource = lists:member(TWant, ['Metals', 'Water', 'Carbon']) and lists:member(THave, ['Metals', 'Water', 'Carbon']),
 	if IsResource == true ->
 		arbitrator:format("Broadcasting need for ~p, offering ~p~n", [TWant,THave]),
 		Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
@@ -323,9 +324,9 @@ init([]) ->
 	% Offers: Offers from other nodes
 	% OutOffers: Offers to other nodes
 	% Contacts: Nodes we have made contact with
-	Resources = dict:from_list([{'Iron', 10}, {'Food', 10}, {'Gas', 10}]),
+	Resources = dict:from_list([{'Metals', 10}, {'Water', 10}, {'Carbon', 10}]),
 	Ships = dict:from_list([{'Cargo ship', 0}, {'Harvester', 1}, {'Escort', 0}]),
-	TradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
 	OutOffers = dict:from_list([]),
@@ -335,26 +336,26 @@ init([]) ->
 	arbitrator:update_ships(dict:to_list(Ships)),
 	arbitrator:update_resources(dict:to_list(Resources)),
 	if ResourceType == 0 -> 
-		arbitrator:format("This solar system has ~p~n", ["Gas"]),
+		arbitrator:format("This solar system has ~p~n", ["Carbon"]),
 		{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, false, false}};
 	true -> 
-		arbitrator:format("This solar system has ~p~n", ["Food"]),
+		arbitrator:format("This solar system has ~p~n", ["Water"]),
 		{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, false, true}}
 	end.
 
 %% checks if there are enough resources if so detract from resources
 %% and reply with ok to build else reply with don't build
-handle_call({build, Iron, Food, Gas}, _From, State) ->
+handle_call({build, Metals, Water, Carbon}, _From, State) ->
 	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
-	I = dict:fetch('Iron', Res),
-	F = dict:fetch('Food', Res),
-	G = dict:fetch('Gas', Res),
+	I = dict:fetch('Metals', Res),
+	F = dict:fetch('Water', Res),
+	G = dict:fetch('Carbon', Res),
 	if 
-		I >= Iron andalso F >= Food andalso G >= Gas ->
-			TempRes1 = dict:update_counter('Iron', -Iron, Res),
-			TempRes2 = dict:update_counter('Food', -Food, TempRes1),
+		I >= Metals andalso F >= Water andalso G >= Carbon ->
+			TempRes1 = dict:update_counter('Metals', -Metals, Res),
+			TempRes2 = dict:update_counter('Water', -Water, TempRes1),
 
-			NewRes = dict:update_counter('Gas', -Gas, TempRes2),
+			NewRes = dict:update_counter('Carbon', -Carbon, TempRes2),
 			arbitrator:update_resources(dict:to_list(NewRes)),
 			{reply, build_ok, {NewRes, Ships, Trade, Req, Off, Out, Con, DR, System}};	
 		true ->
@@ -378,7 +379,7 @@ handle_call(print_state, _From, State) ->
 handle_call({start_harvest, Type}, _From, State) ->			
 	io:format("check if enough ships~n"),
 	{Res, Ships, Trade, Req, Off, Out, Con, DR, System} = State,
-	if (System == false) and (Type == 'Food') or (System == true) and (Type == 'Gas') ->
+	if (System == false) and (Type == 'Water') or (System == true) and (Type == 'Carbon') ->
 		{reply, badResource, State};
 	true ->
 		H = dict:fetch('Harvester', Ships),
@@ -477,6 +478,7 @@ handle_cast({harvest, Type, Qty}, State) ->
 	NewRes = dict:update_counter(Type, Qty, Resources),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	arbitrator:update_resources(dict:to_list(NewRes)),
+
 	io:format("~w: ~w~n", [Type, Qty]),
 	{noreply, {NewRes, NewShips, Trade, Req, Off, Out, Con, DR, System}};	
 %% receives a message from another player
@@ -488,9 +490,9 @@ handle_cast({Node, msg, Msg}, State) ->
 handle_cast({_Node, deathray, {}}, State) ->
 	io:format("You have been destroyed by the death ray :(~n"),
 	{_, _, _, Req, Off, Out, Con, _, System} = State,
-	NewRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	NewRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
 	NewShips = dict:from_list([{'Cargo ship', 0}, {'Harvester', 0}, {'Escort', 0}]),
-	NewTradeRes = dict:from_list([{'Iron', 0}, {'Food', 0}, {'Gas', 0}]),
+	NewTradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
 	arbitrator:update_resources(dict:to_list(NewRes)),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, Off, Out, Con, false, System}};
