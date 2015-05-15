@@ -238,7 +238,7 @@ harvest(Type) ->
 	end.
 
 % Perform a harvesting operation of the given type and after waiting for  
-% some time, sends the result to the server
+% some time, sends the result to the server if the harvester has not been attacked by pirates
 harvesting(Type) ->
 	%io:format("Harvesting~n"),
 	PirateAttack = attacked_by_pirates(3),
@@ -259,7 +259,7 @@ harvesting(Type) ->
 destroy_everything() ->
 	gen_server:cast(solar_system, deathray).
 
-%% Send to all nodes trade request
+%% Send to all nodes a valid trade request
 trade_request(TWant, THave) ->
 	IsResource = lists:member(TWant, ['Metals', 'Water', 'Carbon', 'Crystals']) and lists:member(THave, ['Metals', 'Water', 'Carbon', 'Crystals']),
 	if IsResource == true ->
