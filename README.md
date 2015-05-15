@@ -22,7 +22,7 @@ In the GUI:
 2. click ```Communication -> Connect``` and enter the full name of another node, this connects your node to all nodes he is connected to.
 
 ## About the game
-You are in control of a solar system with limited resources. Every solar system contains harvestable metals and 2 out of 3 rare materials. In order to dominate the galaxy you need to strategically trade resources with other players in order to build a death ray that has the capability to wipe out all resources in the galaxy.
+You are in control of a solar system with limited resources. Every solar system contains harvestable metals and 2 out of 3 rare materials. In order to dominate the galaxy you need to strategically trade resources with other players in order to build a death ray that has the capability to wipe out all gathered resources and docked ships in the galaxy.
 
 ## About the ships
 *Harvesters*: can be sent to harvest any resource available in the solar system. 
