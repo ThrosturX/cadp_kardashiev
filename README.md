@@ -15,8 +15,8 @@ Start game: `application:start(solar).`
 
 In the GUI:
 
-1. click Communication -> Set name to set your nodes name, this also sets the cookie.
-2. click ''Communication -> Connect'' and enter the full name of another node, this connects your node to all nodes he is connected to.
+1. click ```Communication -> Set nam```e to set your nodes name, this also sets the cookie.
+2. click ```Communication -> Connect``` and enter the full name of another node, this connects your node to all nodes he is connected to.
 
 ## About the game
 You are in control of a solar system with limited resources. Every solar system contains harvestable metals and 2 out of 3 rare materials. In order to dominate the galaxy you need to strategically trade resources with other players in order to build a death ray that has the capability to wipe out all resources in the galaxy.
