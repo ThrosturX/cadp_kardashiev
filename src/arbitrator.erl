@@ -117,12 +117,14 @@ get_outgoing_offers() ->
 get_incoming_offers() ->
 	offers_to_list(dict:to_list(solar_system:get_incoming_offers())).
 
+%% Clears the trade requests from the Nodes state.
 clear_trade_requests() ->
 	solar_system:clear_trade_requests().
 
-%% Send spy drone to Node, returns Nodes status.
+%% Send spy drone to Node, returns part of Nodes state.
 send_spy_drone(Node) ->
 	solar_system:send_spy_drone(l2a(Node)).
+	
 	
 %%%% Helper functions
 l2a(N) -> list_to_atom(N).
