@@ -684,6 +684,7 @@ handle_cast({cOutOffer, Node}, State) ->
 	arbitrator:update_ships(dict:to_list(NShips)),
 
 	{noreply, {NRes, NShips, NTradeRes, Req, Off, NOut, Con, DR, System}};
+%% removes a trade offer from 'Node' from our list
 handle_cast({Node, coffer, _}, State) ->
 	io:format("Remove cancelled offer~n"),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
@@ -696,6 +697,7 @@ handle_cast({Node, outoffer, {TWant, QT, THave, QH, NumberOfEscorts}}, State) ->
 	Fun = fun(Old) -> Old end,
 	NOut = dict:update(Node, Fun, [{TWant, QT, THave, QH, NumberOfEscorts}], Out),
 	{noreply, {Res, Ships, TradeRes, Req, Off, NOut, Con, DR, System}};	
+%% when an offer has been accepted, removes it from the list and starts the transport process
 handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	[{THad, QH, TGot, QG, _}] = dict:fetch(Node, Off),
@@ -709,6 +711,8 @@ handle_cast({offer_confirmed, Node, NumberOfEscorts}, State) ->
 	arbitrator:update_offers(NewOff),
 	
 	{noreply, {Res, Ships, NewTradeRes, Req, NewOff, Out, Con, DR, System}};
+%% when an offer we have prepared has been cancelled, we remove it from the list
+%% and add the reserved resources and ships back to our pool
 handle_cast({offer_cancelled, Node}, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	[{THad, QH, _, _, _}] = dict:fetch(Node, Off),
@@ -724,12 +728,14 @@ handle_cast({offer_cancelled, Node}, State) ->
 	arbitrator:update_offers(NewOff),
 	
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, NewOff, Out, Con, DR, System}};
+%% informs the player of a lost transport
 handle_cast({transport_lost}, State) ->
 	io:format("A transport was lost."),
 	Msg = "It's been a while since a trade mission started and the cargo ship has not returned. Perhaps it has been lost?",
 	T = random(10000, 900000),
 	arbitrator:lost_cargo(T, Msg),
 	{noreply, State};
+%% updates our resources and ships after a successful transportation
 handle_cast({transport_done, Type, Qt, NumberOfEscorts}, State) ->
 	io:format("Gen_server: transport is done ~n This function should update the resources instead: ~p ~p ~n", [Type, Qt]),
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
@@ -739,6 +745,7 @@ handle_cast({transport_done, Type, Qt, NumberOfEscorts}, State) ->
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	arbitrator:update_resources(dict:to_list(NewRes)),
 	{noreply, {NewRes, NewShips, TradeRes, Req, Off, Out, Con, DR, System}};
+%% empties our trade request list
 handle_cast(clear_trade_requests, State) ->
 	{Res, Ships, TradeRes, _, Off, Out, Con, DR, System} = State,
 	NewReq = dict:from_list([]),
