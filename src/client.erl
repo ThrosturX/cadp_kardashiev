@@ -11,6 +11,7 @@
 % record to store "global variables"
 -record(state, {win, log, resources, contacts, ships, offers, env}).
 
+% constants to facilitate handling of events and control identities
 -define(ID_DEATH_RAY, 101).
 -define(ID_HARVEST, 102).
 -define(ID_TRADE, 103).
@@ -310,7 +311,7 @@ cancel_offer(State) ->
 	Sizer = wxBoxSizer:new(?wxHORIZONTAL),
 	
 	OSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, [{label, "Outgoing Offers"}]),
-	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "Contact"}, {1, "Qty (request)"}, {2, "Request"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
+	{OfferPanel, OfferList} = create_list_ctrl(Panel, [{0, "eontact"}, {1, "Request"}, {2, "Qty (request)"}, {3, "Offer"}, {4, "Qty (offer)"}], 400, 150),
 	wxWindow:setId(OfferList, ?ID_MY_OFFERS),
 	insert_offer(OfferList, Offers),
 
@@ -344,7 +345,7 @@ make_offer(State) ->
 							?wxSTAY_ON_TOP
 						}]),
 
-	% TODO? change getters
+	% it would be nice to change getters here but it's not an A requirement.
 	Avail = arbitrator:resource_types(),
 	Owned = arbitrator:resource_types(),
 
@@ -840,6 +841,7 @@ handle_event(Ev,State) ->
 	io:format("~p Got event ~p ~n",[?MODULE, Ev]),
 	{noreply, State}.
 
+% we are not using this
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 

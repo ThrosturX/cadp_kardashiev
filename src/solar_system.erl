@@ -776,14 +776,16 @@ terminate(normal, _State) ->
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
+% utility function to delay transport time on missions between nodes
 transport_delay() ->
 	randomSleep(?MIN_TRANSPORT_TIME, ?MAX_TRANSPORT_TIME).
 
 % pirate attacks
 attacked_by_pirates(NumberOfEscorts) ->
-	Pirates = random(0, 100),
-	Strength = random(0, 3),
+	Pirates = random(0, 100), % determine whether or not the pirates are going to actually engage
+	Strength = random(0, 3), % how strong the pirates will be, if they engage
 
+	% chance of pirate attack is quite low, but they are more likely to attack if they are max strength
 	if Pirates > 85, Strength > NumberOfEscorts; Strength == 3 ->
 		RemainingEscorts = lists:max([0, NumberOfEscorts - Strength]);
 	   Pirates > 50, Strength == NumberOfEscorts; Strength == 3 ->
@@ -803,20 +805,20 @@ found_by_pirates(E, Q) ->
 	
 % transport an item
 transport(Type, Qt, NumberOfEscorts) -> 
-	arbitrator:format("Retrieving ~p x ~s, escorted by a team of size ~p ~n", [Qt, Type, NumberOfEscorts]),
+	arbitrator:format("Retrieving ~p x ~s, escorted by a team of size ~p ~n", [Qt, Type, NumberOfEscorts]), % notify the user that the mission is starting
 	if NumberOfEscorts =/= 0 ->
-		   Escorts = attacked_by_pirates(NumberOfEscorts),
+		   Escorts = attacked_by_pirates(NumberOfEscorts), % if there are escorts, they might encounter pirates on the way out
 		   transport_delay(); % wait for escorts to arrive
 	true -> Escorts = NumberOfEscorts
 	end,
-	TargetedByPirates = found_by_pirates(Escorts, Qt),
-	if TargetedByPirates ->
+	TargetedByPirates = found_by_pirates(Escorts, Qt), % after they retrieve the cargo, the pirates might be interested in plundering
+	if TargetedByPirates -> % the pirates are interesetd in plundering, they might attack again
 		RemainingEscorts = attacked_by_pirates(Escorts);
 		true -> RemainingEscorts = Escorts
 	end,
 	if RemainingEscorts == 0, TargetedByPirates ->
-		gen_server:cast(solar_system, {transport_lost});
-	   true -> 
+		gen_server:cast(solar_system, {transport_lost}); % cast that the transport was lost
+	   true -> % the transport survives the trip, delay it and return the items
 		transport_delay(),
 		arbitrator:format("Transport team has arrived, bringing ~p x ~s! ~n", [Qt, Type]),
 		gen_server:cast(solar_system, {transport_done, Type, Qt, RemainingEscorts})
