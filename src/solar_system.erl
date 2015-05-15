@@ -765,17 +765,21 @@ handle_cast(return_drone, State) ->
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
-
+	
+%% Handles timeouts and messages sent to gen_server without cast/call.
 handle_info(Info, State) ->
 	io:format("~p~n", [Info]),
 	{noreply, State}.
 
+%% Called when the server terminates normally.
 terminate(normal, _State) ->
 	ok.
 
+%% Unused, for gen_server behaviour
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
+%% Sleep for a random amount of time to simulate transport travel time.
 transport_delay() ->
 	randomSleep(?MIN_TRANSPORT_TIME, ?MAX_TRANSPORT_TIME).
 
@@ -801,7 +805,7 @@ found_by_pirates(E, Q) ->
 	true -> false
 	end.
 	
-% transport an item
+% Transport Qt amount of item Type with NumberOfEscorts escorts 
 transport(Type, Qt, NumberOfEscorts) -> 
 	arbitrator:format("Retrieving ~p x ~s, escorted by a team of size ~p ~n", [Qt, Type, NumberOfEscorts]),
 	if NumberOfEscorts =/= 0 ->
