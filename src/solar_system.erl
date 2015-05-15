@@ -195,7 +195,8 @@ build_process(Type) ->
 			false
 	end.
 
-%% Building function sleeps for the time it takes to build ship of Type
+%% Building function sleeps for the time it takes to 
+%% build ship of type Type and takes into account its building factor
 building(Type) ->
 	SType = atom_to_list(Type),
 	arbitrator:format("Building: ~s~n", [SType]),
@@ -222,9 +223,9 @@ building(Type) ->
 harvest(Type) ->
 	IsResource = lists:member(Type, ['Metals', 'Water', 'Carbon', 'Crystals']) or (Type == 'Rare'),
 	if IsResource == true ->
-		io:format("Harvest~n"),
+		%io:format("Harvest~n"),
 		{Reply, NType} = gen_server:call(solar_system, {start_harvest, Type}),
-		io:format("reply: ~p~n", [Reply]),
+		%io:format("reply: ~p~n", [Reply]),
 		if
 			Reply == badResource -> 
 				arbitrator:format("There is no ~s in this solar system~n", [NType]);
@@ -239,7 +240,7 @@ harvest(Type) ->
 % Perform a harvesting operation of the given type and after waiting for  
 % some time, sends the result to the server
 harvesting(Type) ->
-	io:format("Harvesting~n"),
+	%io:format("Harvesting~n"),
 	PirateAttack = attacked_by_pirates(3),
 	if PirateAttack == 0 ->
 			randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
@@ -254,7 +255,7 @@ harvesting(Type) ->
 		end
 	end.
 
-%% Death Ray activated send to all nodes reset of resources and ships
+%% Death Ray activated send to all nodes reset of gathered resources and docked ships
 destroy_everything() ->
 	gen_server:cast(solar_system, deathray).
 
@@ -278,10 +279,13 @@ cancel_offer(Node) ->
 	gen_server:cast(solar_system, {cOutOffer, Node}),
 	send(coffer, {}, Node).
 
-%% Check if offer is possible then send offer to Node
+%% Checks if offer is possible, that is:
+%% are there any cargo ships for this mission,
+%% are there enough escort ships for this mission, 
+%% are there enough resources for this mission,
+%% If these requirements are satisfied then send offer to Node
 offer(Node, TWant, QT, THave, QH, NumberOfEscorts) ->
-	io:format("Offer~n"),
-		
+	%io:format("Offer~n"),	
 	HasOffer = gen_server:call(solar_system, {have_offer_to, Node}),
 	%io:format("HasOffer: ~p~n", [HasOffer]),
 	if
@@ -305,6 +309,7 @@ offer(Node, TWant, QT, THave, QH, NumberOfEscorts) ->
 		true ->
 			arbitrator:format("Outstanding offer to ~s present.~n", [Node])
 	end.
+
 %% Accept offer from Node if possible.	
 accept_offer(Node, NumberOfEscorts) ->
 	% First check if resources are available
