@@ -129,7 +129,7 @@ print() ->
 
 %% Outputs list of all resource types
 resource_types() ->
-	["Metals", "Water", "Carbon"].
+	["Metals", "Water", "Carbon", "Crystals"].
 
 %% Outputs list of all ship types
 ship_types() ->
