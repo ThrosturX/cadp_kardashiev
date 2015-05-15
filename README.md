@@ -6,7 +6,7 @@ Run Erlang VM: `erl -pa ebin/`
 Start game: `application:start(solar).`
 
 
-
+## Building cost for each ship
 |    Item    | Metals | Water | Carbon | Crystals |
 |------------|--------|-------|--------|----------|
 | Harvester  |   50   |   1   |    1   |    2     |
