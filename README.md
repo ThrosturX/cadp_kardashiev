@@ -1,4 +1,6 @@
 ## Get Erlang
+#### Linux in terminal
+`sudo apt-get install erlang`
 #### MAC OSX in terminal
 `ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 
