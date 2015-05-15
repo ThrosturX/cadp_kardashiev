@@ -15,7 +15,7 @@ Start game: `application:start(solar).`
 
 In the GUI:
 
-1. click ```Communication -> Set nam```e to set your nodes name, this also sets the cookie.
+1. click ```Communication -> Set name``` to set your nodes name, this also sets the cookie.
 2. click ```Communication -> Connect``` and enter the full name of another node, this connects your node to all nodes he is connected to.
 
 ## About the game
