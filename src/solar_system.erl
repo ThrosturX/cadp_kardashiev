@@ -744,6 +744,7 @@ handle_cast(clear_trade_requests, State) ->
 	NewReq = dict:from_list([]),
 	arbitrator:update_trade_requests(NewReq),
 	{noreply, {Res, Ships, TradeRes, NewReq, Off, Out, Con, DR, System}};
+%% If we have a deatray we cast a deathray message to each other node.
 handle_cast(deathray, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	if DR == true ->
@@ -758,6 +759,8 @@ handle_cast(deathray, State) ->
 		arbitrator:format("You need to build Death Ray first~n", []),
 		{noreply, State}
 	end;
+%% Handles return of spy drone, increments the Spy drone counter if
+%% it is not attacked by pirates.
 handle_cast(return_drone, State) ->
 	{Res, Ships, TradeRes, Req, Off, Out, Con, DR, System} = State,
 	Drone_Broke = attacked_by_pirates(3),
@@ -767,6 +770,7 @@ handle_cast(return_drone, State) ->
 	   true -> NewShips = Ships
 	end,
 	{noreply, {Res, NewShips, TradeRes, Req, Off, Out, Con, DR, System}};
+%% Handles stop cast send to server.
 handle_cast(stop, State) ->
 	io:format("Stopping solar_system ~n"),
 	{stop, normal, State}.
