@@ -1,4 +1,4 @@
-## How can I run?
+## How to play?
 Compile: `erl -make`
 
 Run Erlang VM: `erl -pa ebin/`
