@@ -13,7 +13,7 @@ Run Erlang VM: `erl -pa ebin/`
 
 Start game: `application:start(solar).`
 
-## How can i play with others?
+## How can I play with others?
 
 In the GUI:
 
