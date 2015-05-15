@@ -38,8 +38,8 @@
 
 %%% Definition of constants 
 %% Harvest constants
--define(MAX_HARVEST_METAL, 150).
--define(MAX_HARVEST_RARE, 30).
+-define(MAX_HARVEST_METAL, 325).
+-define(MAX_HARVEST_RARE, 72).
 -define(MAX_HARVEST_TIME, 9000).
 -define(MIN_HARVEST_TIME, 2000).
 
@@ -71,7 +71,7 @@
 -define(ESCORT_WATER, 9).
 -define(ESCORT_CARBON, 6).
 -define(ESCORT_CRYSTALS, 7).
--define(HARVESTER_METALS, 50).
+-define(HARVESTER_METALS, 25).
 -define(HARVESTER_WATER, 1).
 -define(HARVESTER_CARBON, 1).
 -define(HARVESTER_CRYSTALS, 2).
@@ -133,7 +133,7 @@ resource_types() ->
 
 %% Outputs list of all ship types
 ship_types() ->
-	["Escort", "Harvester", "Cargo ship"].
+	["Escort", "Harvester", "Cargo ship", "Spy Drone"].
 
 %% This function is call by the arbitrator to build
 build(Type) ->
@@ -240,8 +240,9 @@ harvest(Type) ->
 % some time, sends the result to the server
 harvesting(Type) ->
 	io:format("Harvesting~n"),
-	PirateAttack = attacked_by_pirates(9),
+	PirateAttack = attacked_by_pirates(3),
 	if PirateAttack == 0 ->
+			randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
 			gen_server:cast(solar_system, {harvest_plundered, atom_to_list(Type)});
 		true ->
 			randomSleep(?MIN_HARVEST_TIME, ?MAX_HARVEST_TIME),
@@ -407,29 +408,31 @@ init([]) ->
 	% Contacts: Nodes we have made contact with
 	% DR: whether we have a death ray or not
 	% System: what resources this system has
-	Resources = dict:from_list([{'Metals', 25}, {'Water', 15}, {'Carbon', 15}, {'Crystals', 10}]),
-	Ships = dict:from_list(lists:reverse([{'Cargo ship', 1}, {'Harvester', 2}, {'Escort', 0}, {'Spy drone', 0}])),
+	
+	Ships = dict:from_list(lists:reverse([{'Cargo ship', 5}, {'Harvester', 10}, {'Escort', 2}, {'Spy drone', 1}])),
 	TradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}, {'Crystals', 0}]),
 	Requests = dict:from_list([]),
 	Offers = dict:from_list([]),
 	OutOffers = dict:from_list([]),
 	Contacts = dict:from_list([]),
 	DR = false,
-	arbitrator:update_ships(dict:to_list(Ships)),
-	arbitrator:update_resources(dict:to_list(Resources)),
 
 	ResourceType = random(0, 2),
 	if ResourceType == 0 ->
+		   Resources = dict:from_list([{'Metals', 325}, {'Water', 10}, {'Carbon', 14}, {'Crystals', 25}]),
 		   FirstResource = 'Water',
 		   SecondResource = 'Carbon';
 	   ResourceType == 1 ->
+		   Resources = dict:from_list([{'Metals', 325}, {'Water', 10}, {'Carbon', 24}, {'Crystals', 15}]),
 		   FirstResource = 'Water',
 		   SecondResource = 'Crystals';
 	   ResourceType == 2 ->
+		   Resources = dict:from_list([{'Metals', 325}, {'Water', 20}, {'Carbon', 14}, {'Crystals', 15}]),
 		   FirstResource = 'Carbon',
 		   SecondResource = 'Crystals'
 	end,
-
+	arbitrator:update_ships(dict:to_list(Ships)),
+	arbitrator:update_resources(dict:to_list(Resources)),
 	arbitrator:format("This solar system contains ~s and ~s~n", [atom_to_list(FirstResource), atom_to_list(SecondResource)]),
 	{ok, {Resources, Ships, TradeRes, Requests, Offers, OutOffers, Contacts, DR, [FirstResource, SecondResource]}}.
 
@@ -602,10 +605,10 @@ handle_cast({building, Type}, State) ->
 	end;
 
 handle_cast({harvest_plundered, Type}, State) ->
-	RandLost = ["lost", "plundered", "destroyed", "hijacked"],
+	RandLost = ["lost", "plundered", "destroyed", "hijacked", "disabled", "fried", "stolen", "attacked", "taken hostage", "blown up", "blown to smithereens", "attacked by pirates", "shot at by sharks with freaking laser beams attached to their heads", "attacked by sharks with lasers", "fired at with lasers", "bombed", "lost to radiation", "irradiated", "lost to electromagnetic storms", "disabled by a stray torpedo", "lost to pilot error"],
 	Index = random:uniform(length(RandLost)),
 	Reason = lists:nth(Index, RandLost),
-	arbitrator:format("A harvester was ~s while on a harvesting mission for ~s ~n", [Reason, Type]),
+	arbitrator:format("A harvester was ~s while on a mission for ~s ~n", [Reason, Type]),
 	{noreply, State};
 %% ends the harvest and increases our current resources accordingly
 handle_cast({harvest, Type, Qty}, State) ->
@@ -788,6 +791,14 @@ attacked_by_pirates(NumberOfEscorts) ->
 	end,
 	RemainingEscorts.
 
+found_by_pirates(E, Q) ->
+	Threshhold = random(0, 100),
+	Size = random(0, 25),
+	if Threshhold > Q, Size > E ->
+		true;
+	true -> false
+	end.
+	
 transport(Type, Qt, NumberOfEscorts) -> 
 	arbitrator:format("Transporting ~p x ~s, escorted by a team of size ~p ~n", [Qt, Type, NumberOfEscorts]),
 	if NumberOfEscorts =/= 0 ->
@@ -795,8 +806,12 @@ transport(Type, Qt, NumberOfEscorts) ->
 		   transport_delay(); % wait for escorts to arrive
 	true -> Escorts = NumberOfEscorts
 	end,
-	RemainingEscorts = attacked_by_pirates(Escorts),
-	if RemainingEscorts == 0 ->
+	TargetedByPirates = found_by_pirates(Escorts, Qt),
+	if TargetedByPirates ->
+		RemainingEscorts = attacked_by_pirates(Escorts);
+		true -> RemainingEscorts = Escorts
+	end,
+	if RemainingEscorts == 0, TargetedByPirates ->
 		gen_server:cast(solar_system, {transport_lost});
 	   true -> 
 		transport_delay(),
