@@ -220,7 +220,7 @@ building(Type) ->
 % If no harvesters are available, nothing happens
 % If resource does not exist in system, nothing happens
 harvest(Type) ->
-	IsResource = lists:member(Type, ['Metals', 'Water', 'Carbon']) or (Type == 'Rare'),
+	IsResource = lists:member(Type, ['Metals', 'Water', 'Carbon', 'Crystals']) or (Type == 'Rare'),
 	if IsResource == true ->
 		io:format("Harvest~n"),
 		{Reply, NType} = gen_server:call(solar_system, {start_harvest, Type}),
@@ -259,7 +259,7 @@ destroy_everything() ->
 
 %% Send to all nodes trade request
 trade_request(TWant, THave) ->
-	IsResource = lists:member(TWant, ['Metals', 'Water', 'Carbon']) and lists:member(THave, ['Metals', 'Water', 'Carbon']),
+	IsResource = lists:member(TWant, ['Metals', 'Water', 'Carbon', 'Crystals']) and lists:member(THave, ['Metals', 'Water', 'Carbon', 'Crystals']),
 	if IsResource == true ->
 		arbitrator:format("Broadcasting need for ~s, offering ~s~n", [TWant,THave]),
 		Fun = fun(N) -> send(rtrade, {TWant, THave}, N) end,
@@ -628,9 +628,9 @@ handle_cast({Node, msg, Msg}, State) ->
 handle_cast({_Node, deathray, {}}, State) ->
 	io:format("You have been destroyed by the death ray :(~n"),
 	{_, _, _, Req, Off, Out, Con, _, System} = State,
-	NewRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
+	NewRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}, {'Crystals', 0}]),
 	NewShips = dict:from_list([{'Cargo ship', 0}, {'Harvester', 0}, {'Escort', 0}]),
-	NewTradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}]),
+	NewTradeRes = dict:from_list([{'Metals', 0}, {'Water', 0}, {'Carbon', 0}, {'Crystals', 0}]),
 	arbitrator:update_resources(dict:to_list(NewRes)),
 	arbitrator:update_ships(dict:to_list(NewShips)),
 	{noreply, {NewRes, NewShips, NewTradeRes, Req, Off, Out, Con, false, System}};
