@@ -25,15 +25,15 @@ In the GUI:
 You are in control of a solar system with limited resources. Every solar system contains harvestable metals and 2 out of 3 rare materials. In order to dominate the galaxy you need to strategically trade resources with other players in order to build a death ray that has the capability to wipe out all resources in the galaxy.
 
 ## About the ships
-Harvesters: can be sent to harvest any resource available in the solar system. 
+*Harvesters*: can be sent to harvest any resource available in the solar system. 
 
-Cargo ships: are used for trading with other players. 
+*Cargo ships*: are used for trading with other players. 
 
-Escorts: can be sent with cargo ships to protect them from pirates. The higher the number of escorts, the lower the chance of being attacked. 
+*Escorts*: can be sent with cargo ships to protect them from pirates. The higher the number of escorts, the lower the chance of being attacked. 
 
-Spy drones: can be sent to spy on other players. If the spy mission is succesful it reveals the resources and ships currently owned by the player. 
+*Spy drones*: can be sent to spy on other players. If the spy mission is succesful it reveals the resources and ships currently owned by the player. 
 
-Death ray: Activating the death ray destroyes the resources and ships belonging to each other player. However ships currently on mission are not destroyed. A death ray can only be used once.
+*Death ray*: Activating the death ray destroyes the resources and ships belonging to each other player. However ships currently on mission are not destroyed. A death ray can only be used once.
 
 Pirates can potentially attack any of your ships. Escorts are the only type that reduces pirate attacks, and can only be sent with cargo ships. The more cargo the carg ship is carrying, the higher the chance is of it being attacked. 
 
