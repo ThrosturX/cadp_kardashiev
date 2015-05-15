@@ -8,7 +8,7 @@ Start game: `application:start(solar).`
 
 ## Building cost for each ship
 |    Item    | Metals | Water | Carbon | Crystals |
-|------------|--------|-------|--------|----------|
+|:----------:|:------:|:-----:|:------:|:--------:|
 | Harvester  |   50   |   1   |    1   |    2     |
 | Cargo Ship |  200   |   2   |    3   |    1     |
 |   Escort   |  500   |   9   |    6   |    7     |
