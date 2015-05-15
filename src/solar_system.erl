@@ -779,6 +779,7 @@ code_change(_OldVsn, State, _Extra) ->
 transport_delay() ->
 	randomSleep(?MIN_TRANSPORT_TIME, ?MAX_TRANSPORT_TIME).
 
+% pirate attacks
 attacked_by_pirates(NumberOfEscorts) ->
 	Pirates = random(0, 100),
 	Strength = random(0, 3),
@@ -791,6 +792,7 @@ attacked_by_pirates(NumberOfEscorts) ->
 	end,
 	RemainingEscorts.
 
+% whether to get targeted by pirates
 found_by_pirates(E, Q) ->
 	Threshhold = random(0, 100),
 	Size = random(0, 25),
@@ -799,8 +801,9 @@ found_by_pirates(E, Q) ->
 	true -> false
 	end.
 	
+% transport an item
 transport(Type, Qt, NumberOfEscorts) -> 
-	arbitrator:format("Transporting ~p x ~s, escorted by a team of size ~p ~n", [Qt, Type, NumberOfEscorts]),
+	arbitrator:format("Retrieving ~p x ~s, escorted by a team of size ~p ~n", [Qt, Type, NumberOfEscorts]),
 	if NumberOfEscorts =/= 0 ->
 		   Escorts = attacked_by_pirates(NumberOfEscorts),
 		   transport_delay(); % wait for escorts to arrive
@@ -815,10 +818,12 @@ transport(Type, Qt, NumberOfEscorts) ->
 		gen_server:cast(solar_system, {transport_lost});
 	   true -> 
 		transport_delay(),
-		arbitrator:format("Transport team has arrived! ~n", []),
+		arbitrator:format("Transport team has arrived, bringing ~p x ~s! ~n", [Qt, Type]),
 		gen_server:cast(solar_system, {transport_done, Type, Qt, RemainingEscorts})
 	end.
 
+
+% Utility function to pick a random item from a list
 random_member(L) -> 
 	Index = random:uniform(length(L)),
 	lists:nth(Index, L).
