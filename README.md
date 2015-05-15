@@ -24,7 +24,7 @@ You are in control of a solar system with limited resources. Every solar system 
 ## Building cost for each ship
 |    Item    | Metals | Water | Carbon | Crystals |
 |:----------:|:------:|:-----:|:------:|:--------:|
-| Harvester  |   50   |   1   |    1   |    2     |
+| Harvester  |   25   |   1   |    1   |    2     |
 | Cargo Ship |  200   |   2   |    3   |    1     |
 |   Escort   |  500   |   9   |    6   |    7     |
 | Spy Drone  |  800   |  21   |   24   |   23     |
